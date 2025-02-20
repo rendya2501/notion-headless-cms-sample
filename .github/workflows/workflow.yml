@@ -1,0 +1,42 @@
+name: Notion to Markdown Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  import_markdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Restore dependencies
+        run: dotnet restore .github/src/notion-to-markdown.csproj
+
+      - name: Build
+        run: dotnet build .github/src/notion-to-markdown.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish .github/src/notion-to-markdown.csproj --configuration Release --output ./out --no-build
+
+      - name: Run Notion to Markdown
+        run: |
+          dotnet ./out/notion-to-markdown.dll \
+            ${{ secrets.NOTION_AUTH_TOKEN }} \
+            ${{ secrets.NOTION_DATABASE_ID }} \
+            "articles/{{publish|date.to_string('%Y/%m')}}/{{slug}}"
+
+      - name: Commit exported markdown files
+        if: ${{ steps.export.outputs.exported_count != '0'}}
+        run: |
+          git config --global user.email "${{ secrets.USER_EMAIL }}"
+          git config --global user.name "${{ secrets.USER_NAME }}"
+          git add articles/
+          git commit -m "Import files from notion database" || exit 0
+          git push
