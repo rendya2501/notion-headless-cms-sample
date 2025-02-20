@@ -76,7 +76,12 @@ do
     });
 } while (true);
 
-Console.WriteLine($"::set-output name=exported_count::{exportedCount}");
+// GITHUB_ENV に値を書き込む
+using (var writer = new StreamWriter(Environment.GetEnvironmentVariable("GITHUB_ENV"), true))
+{
+    writer.WriteLine($"EXPORTED_COUNT={exportedCount}");
+}
+Console.WriteLine($"EXPORTED_COUNT={exportedCount}");
 
 
 
