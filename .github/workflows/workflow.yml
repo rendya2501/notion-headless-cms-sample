@@ -33,13 +33,8 @@ jobs:
             "articles/{{publish|date.to_string('%Y/%m')}}/{{slug}}"
 
       - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --cached --exit-code
-          if [ $? -eq 0 ]; then
-            echo "No changes to commit."
-            exit 0
-          fi
+        if: env.EXPORTED_COUNT == '0'
+        run: exit 0
 
       - name: Commit exported markdown files
         run: |
