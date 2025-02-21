@@ -19,9 +19,9 @@ Piyo
 ```csharp
 
 public class Hoge { 
-	public Hoge() {
-		var a = 1;
-	}
+    public Hoge() {
+        var a = 1;
+    }
 }
 
 ```
