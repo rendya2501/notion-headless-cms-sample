@@ -621,7 +621,7 @@ void AppendCode(CodeBlock codeBlock, string indent, StringBuilder stringBuilder)
         string text = richText.PlainText.Replace("\t", "    "); // タブをスペースに変換
         stringBuilder.Append(indent);
         stringBuilder.Append(text);
-        stringBuilder.AppendLine(string.Empty);\\
+        stringBuilder.AppendLine(string.Empty);
     }
     stringBuilder.AppendLine($"{indent}```");
 }
