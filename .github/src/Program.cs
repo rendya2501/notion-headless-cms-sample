@@ -615,9 +615,13 @@ void AppendCode(CodeBlock codeBlock, string indent, StringBuilder stringBuilder)
     stringBuilder.AppendLine($"{indent}```{NotionCodeLanguageToMarkdownCodeLanguage(codeBlock.Code.Language)}");
     foreach (var richText in codeBlock.Code.RichText)
     {
+        // stringBuilder.Append(indent);
+        // AppendRichText(richText, stringBuilder);
+        // stringBuilder.AppendLine(string.Empty);
+        string text = richText.PlainText.Replace("\t", "    "); // タブをスペースに変換
         stringBuilder.Append(indent);
-        AppendRichText(richText, stringBuilder);
-        stringBuilder.AppendLine(string.Empty);
+        stringBuilder.Append(text);
+        stringBuilder.AppendLine(string.Empty);\\
     }
     stringBuilder.AppendLine($"{indent}```");
 }
