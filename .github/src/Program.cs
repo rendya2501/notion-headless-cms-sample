@@ -76,12 +76,18 @@ do
     });
 } while (true);
 
-// GITHUB_ENV に値を書き込む
-using (var writer = new StreamWriter(Environment.GetEnvironmentVariable("GITHUB_ENV"), true))
+var githubEnvPath = Environment.GetEnvironmentVariable("GITHUB_ENV") ?? string.Empty;
+if (string.IsNullOrEmpty(githubEnvPath))
 {
-    writer.WriteLine($"EXPORTED_COUNT={exportedCount}");
+    Console.WriteLine("Environment.GetEnvironmentVariable(GITHUB_ENV) is null !!");
 }
-Console.WriteLine($"EXPORTED_COUNT={exportedCount}");
+var exportedCount = $"EXPORTED_COUNT={exportedCount}"
+// GITHUB_ENV に値を書き込む
+using (var writer = new StreamWriter(githubEnvPath, true))
+{
+    writer.WriteLine(exportedCount);
+}
+Console.WriteLine(exportedCount);
 
 
 
