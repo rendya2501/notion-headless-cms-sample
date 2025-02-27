@@ -76,12 +76,13 @@ do
     });
 } while (true);
 
+// NULLチェック
 var githubEnvPath = Environment.GetEnvironmentVariable("GITHUB_ENV") ?? string.Empty;
 if (string.IsNullOrEmpty(githubEnvPath))
 {
     Console.WriteLine("Environment.GetEnvironmentVariable(GITHUB_ENV) is null !!");
 }
-var writeLineExportedCount = $"EXPORTED_COUNT={exportedCount}"
+var writeLineExportedCount = $"EXPORTED_COUNT={exportedCount}";
 // GITHUB_ENV に値を書き込む
 using (var writer = new StreamWriter(githubEnvPath, true))
 {
