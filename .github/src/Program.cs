@@ -81,13 +81,13 @@ if (string.IsNullOrEmpty(githubEnvPath))
 {
     Console.WriteLine("Environment.GetEnvironmentVariable(GITHUB_ENV) is null !!");
 }
-var exportedCount = $"EXPORTED_COUNT={exportedCount}"
+var writeLineExportedCount = $"EXPORTED_COUNT={exportedCount}"
 // GITHUB_ENV に値を書き込む
 using (var writer = new StreamWriter(githubEnvPath, true))
 {
-    writer.WriteLine(exportedCount);
+    writer.WriteLine(writeLineExportedCount);
 }
-Console.WriteLine(exportedCount);
+Console.WriteLine(writeLineExportedCount);
 
 
 
