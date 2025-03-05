@@ -1,18 +1,15 @@
 ---
 type: "Tech"
 title: "Hoge"
-tags: ["Github"]
+description: "説明です。"
+tags: ["Github","Tips"]
 date: "2025-02-20T04:37:00"
 
 ---
 
-
-
 Piyo
 
 `hoge` 
-
-
 
 
 
