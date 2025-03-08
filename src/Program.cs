@@ -23,52 +23,67 @@ if (args.Length != 3)
     throw new ArgumentException("args length should be three.");
 }
 
-// from CLI
+// 引数からNotionの認証トークン、データベースID、出力ディレクトリパスのテンプレートを取得
 var notionAuthToken = args[0];
 var notionDatabaseId = args[1];
 var outputDirectoryPathTemplate = args[2];
 
+// Notionデータベースのフィルタを設定
 var filter = new CheckboxFilter(notionRequestPublisingPropertyName, true);
+// 更新フラグが立っているページを取得
 var pagination = await CreateNotionClient().Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters()
 {
     Filter = filter,
 });
-var now = DateTime.Now;
 
+var now = DateTime.Now;
+// ページのエクスポート数
 var exportedCount = 0;
+
+// ページを取得してMarkdown形式でエクスポート
 do
 {
+    // ページごとに処理
     foreach (var page in pagination.Results)
     {
-        if (await ExportPageToMarkdownAsync(page, now))
+        // ページをMarkdown形式でエクスポート
+        if (!await ExportPageToMarkdownAsync(page, now))
         {
-            await CreateNotionClient().Pages.UpdateAsync(page.Id, new PagesUpdateParameters()
-            {
-                Properties = new Dictionary<string, PropertyValue>()
-                {
-                    [notionCrawledAtPropertyName] = new DatePropertyValue()
-                    {
-                        Date = new Date()
-                        {
-                            Start = now,
-                        }
-                    },
-                    [notionRequestPublisingPropertyName] = new CheckboxPropertyValue()
-                    {
-                        Checkbox = false,
-                    },
-                }
-            });
-
-            exportedCount++;
+            // エクスポートに失敗した場合は次のページに進む
+            continue;
         }
+
+        // ページのプロパティを更新
+        await CreateNotionClient().Pages.UpdateAsync(page.Id, new PagesUpdateParameters()
+        {
+            Properties = new Dictionary<string, PropertyValue>()
+            {
+                // 最終更新日時を更新
+                [notionCrawledAtPropertyName] = new DatePropertyValue()
+                {
+                    Date = new Date()
+                    {
+                        Start = now,
+                    }
+                },
+                // 更新フラグを下げる
+                [notionRequestPublisingPropertyName] = new CheckboxPropertyValue()
+                {
+                    Checkbox = false,
+                },
+            }
+        });
+
+        exportedCount++;
     }
 
+    // 次のページがない場合は終了
     if (!pagination.HasMore)
     {
         break;
     }
 
+    // 次のページを取得
     pagination = await CreateNotionClient().Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters
     {
         Filter = filter,
@@ -76,14 +91,16 @@ do
     });
 } while (true);
 
-// NULLチェック
+// GITHUB_ENV環境変数のパスを取得
 var githubEnvPath = Environment.GetEnvironmentVariable("GITHUB_ENV") ?? string.Empty;
+// GITHUB_ENV環境変数が取得できない場合はエラーを出力
 if (string.IsNullOrEmpty(githubEnvPath))
 {
-    Console.WriteLine("Environment.GetEnvironmentVariable(GITHUB_ENV) is null !!");
+    throw new InvalidOperationException("The GITHUB_ENV environment variable is not set.");
 }
+
 var writeLineExportedCount = $"EXPORTED_COUNT={exportedCount}";
-// GITHUB_ENV に値を書き込む
+// GITHUB_ENVにエクスポートされたファイルの数を書き込む
 using (var writer = new StreamWriter(githubEnvPath, true))
 {
     writer.WriteLine(writeLineExportedCount);
@@ -122,7 +139,7 @@ async Task<bool> ExportPageToMarkdownAsync(Page page, DateTime now, bool forceEx
     DateTime? publishedDateTime = null;
     DateTime? lastSystemCrawledDateTime = null;
 
-    // build frontmatter
+    // frontmatterを構築
     foreach (var property in page.Properties)
     {
         if (property.Key == notionPublishedAtPropertyName)
@@ -242,7 +259,7 @@ async Task<bool> ExportPageToMarkdownAsync(Page page, DateTime now, bool forceEx
     stringBuilder.AppendLine("");
 
 
-    // page content
+    // ページの内容を追加
     var pagination = await CreateNotionClient().Blocks.RetrieveChildrenAsync(page.Id);
     do
     {
