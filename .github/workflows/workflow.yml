@@ -2,29 +2,38 @@ name: Notion to Markdown Workflow
 
 on:
   workflow_dispatch:
+  # schedule:
+  #   - cron: '30 14 * * *' # 23:30 JST
 
 jobs:
   import_markdown:
     runs-on: ubuntu-latest
 
     steps:
+      # リポジトリをチェックアウトするステップ
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # .NETをセットアップするステップ
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
 
+      # 依存関係を復元するステップ
       - name: Restore dependencies
-        run: dotnet restore .github/src/notion-to-markdown.csproj
+        run: dotnet restore src/notion-to-markdown.csproj
 
+      # プロジェクトをビルドするステップ
       - name: Build
-        run: dotnet build .github/src/notion-to-markdown.csproj --configuration Release --no-restore
+        run: dotnet build src/notion-to-markdown.csproj --configuration Release --no-restore
 
+      # 実行ファイルを作成するステップ
+      # プロジェクトをビルドし、実行可能な形式に変換して出力フォルダーに配置します
       - name: Publish
-        run: dotnet publish .github/src/notion-to-markdown.csproj --configuration Release --output ./out --no-build
+        run: dotnet publish src/notion-to-markdown.csproj --configuration Release --output ./out --no-build
 
+      # NotionからMarkdownに変換するステップ
       - name: Run Notion to Markdown
         run: |
           dotnet ./out/notion-to-markdown.dll \
@@ -32,10 +41,12 @@ jobs:
             ${{ secrets.NOTION_DATABASE_ID }} \
             "articles/{{publish|date.to_string('%Y/%m')}}/{{slug}}"
 
+      # 変更があるか確認するステップ
       - name: Check for changes
         if: env.EXPORTED_COUNT == '0'
         run: exit 0
 
+      # エクスポートされたMarkdownファイルをコミットするステップ
       - name: Commit exported markdown files
         run: |
           git config --global user.email "${{ secrets.USER_EMAIL }}"
