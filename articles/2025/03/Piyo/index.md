@@ -1,0 +1,85 @@
+---
+type: "Idea"
+title: "Test2"
+description: "ピヨの説明です。"
+tags: ["Tips"]
+date: "2025-03-08T13:57:00"
+
+---
+
+
+
+piyo
+
+**あああああああ**
+
+
+
+```yaml
+name: Notion to Markdown Workflow
+
+on:
+  workflow_dispatch:
+  # 23:30 に実行する(9時間の時差を考慮)
+  schedule:
+    - cron: '30 14 * * *'
+
+jobs:
+  notion_to_markdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      # リポジトリをチェックアウトするステップ
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # .NETをセットアップするステップ
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      # 依存関係を復元するステップ
+      - name: Restore dependencies
+        run: dotnet restore src/NotionToMarkdown.csproj
+
+      # プロジェクトをビルドするステップ
+      - name: Build
+        run: dotnet build src/NotionToMarkdown.csproj --configuration Release --no-restore
+
+      # 実行ファイルを作成するステップ
+      # プロジェクトをビルドし、実行可能な形式に変換して出力フォルダーに配置します
+      - name: Publish
+        run: dotnet publish src/NotionToMarkdown.csproj --configuration Release --output ./out --no-build
+
+      # NotionからMarkdownに変換するプログラムを実行するステップ
+      - name: Run Notion to Markdown
+        run: |
+          dotnet ./out/NotionToMarkdown.dll \
+            ${{ secrets.NOTION_AUTH_TOKEN }} \
+            ${{ secrets.NOTION_DATABASE_ID }} \
+            "articles/{{publish|date.to_string('%Y/%m')}}/{{slug}}"
+
+      # エクスポートされたファイル数を確認するステップ
+      # ファイル数が0の場合は、処理終了
+      - name: Check for exported files
+        if: env.EXPORTED_COUNT == '0'
+        run: exit 0
+
+      # エクスポートされたMarkdownファイルをリポジトリに反映するステップ
+      - name: Commit exported markdown files
+        run: |
+          git config --global user.email "${{ secrets.USER_EMAIL }}"
+          git config --global user.name "${{ secrets.USER_NAME }}"
+          git add articles/
+          git commit -m "Import files from notion database" || exit 0
+          git push
+```
+
+
+
+
+
+
+
+
