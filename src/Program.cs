@@ -28,10 +28,17 @@ var notionAuthToken = args[0];
 var notionDatabaseId = args[1];
 var outputDirectoryPathTemplate = args[2];
 
+
+// Notionクライアントを作成
+var notionClient = NotionClientFactory.Create(new ClientOptions
+{
+    AuthToken = notionAuthToken,
+});
+
 // Notionデータベースのフィルタを設定
 var filter = new CheckboxFilter(notionRequestPublisingPropertyName, true);
 // 更新フラグが立っているページを取得
-var pagination = await CreateNotionClient().Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters()
+var pagination = await notionClient.Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters()
 {
     Filter = filter,
 });
@@ -54,7 +61,7 @@ do
         }
 
         // ページのプロパティを更新
-        await CreateNotionClient().Pages.UpdateAsync(page.Id, new PagesUpdateParameters()
+        await notionClient.Pages.UpdateAsync(page.Id, new PagesUpdateParameters()
         {
             Properties = new Dictionary<string, PropertyValue>()
             {
@@ -84,7 +91,7 @@ do
     }
 
     // 次のページを取得
-    pagination = await CreateNotionClient().Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters
+    pagination = await notionClient.Databases.QueryAsync(notionDatabaseId, new DatabasesQueryParameters
     {
         Filter = filter,
         StartCursor = pagination.NextCursor,
@@ -108,18 +115,6 @@ using (var writer = new StreamWriter(githubEnvPath, true))
 Console.WriteLine(writeLineExportedCount);
 
 
-
-/// <summary>
-/// Notionクライアントを作成します。
-/// </summary>
-/// <returns>Notionクライアント</returns>
-NotionClient CreateNotionClient()
-{
-    return NotionClientFactory.Create(new ClientOptions
-    {
-        AuthToken = notionAuthToken,
-    });
-}
 
 /// <summary>
 /// 指定されたNotionページをMarkdown形式でエクスポートします。
@@ -260,7 +255,7 @@ async Task<bool> ExportPageToMarkdownAsync(Page page, DateTime now, bool forceEx
 
 
     // ページの内容を追加
-    var pagination = await CreateNotionClient().Blocks.RetrieveChildrenAsync(page.Id);
+    var pagination = await notionClient.Blocks.RetrieveChildrenAsync(page.Id);
     do
     {
         foreach (Block block in pagination.Results.Cast<Block>())
@@ -273,7 +268,7 @@ async Task<bool> ExportPageToMarkdownAsync(Page page, DateTime now, bool forceEx
             break;
         }
 
-        pagination = await CreateNotionClient().Blocks.RetrieveChildrenAsync(page.Id, new BlocksRetrieveChildrenParameters
+        pagination = await notionClient.Blocks.RetrieveChildrenAsync(page.Id, new BlocksRetrieveChildrenParameters
         {
             StartCursor = pagination.NextCursor,
         });
@@ -513,7 +508,7 @@ async Task AppendBlockLineAsync(Block block, string indent, string outputDirecto
 
     if (block.HasChildren)
     {
-        var pagination = await CreateNotionClient().Blocks.RetrieveChildrenAsync(block.Id);
+        var pagination = await notionClient.Blocks.RetrieveChildrenAsync(block.Id);
         do
         {
             foreach (Block childBlock in pagination.Results.Cast<Block>())
@@ -526,7 +521,7 @@ async Task AppendBlockLineAsync(Block block, string indent, string outputDirecto
                 break;
             }
 
-            pagination = await CreateNotionClient().Blocks.RetrieveChildrenAsync(block.Id, new BlocksRetrieveChildrenParameters
+            pagination = await notionClient.Blocks.RetrieveChildrenAsync(block.Id, new BlocksRetrieveChildrenParameters
             {
                 StartCursor = pagination.NextCursor,
             });
