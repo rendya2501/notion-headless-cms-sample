@@ -40,10 +40,6 @@
 //        //string message = configuration.GetSection("Secrets:Message").Value ?? "Failed";
 //        //Console.WriteLine(message);
 
-//        var notionAuthToken = "secret_qmclqtzEOkZNgF7U7HlTqblcp7oqyCzAQClJ4n4uqmL";//args[0];
-//        var notionDatabaseId = "19e4a91b2eac80928ca1ca4acaa42933";//args[1];
-//        var outputDirectoryPathTemplate = "articles/{{publish|date.to_string('%Y/%m')}}/{{slug}}";//args[2];
-
 //        // Notionクライアントを作成
 //        var notionClient = NotionClientFactory.Create(new ClientOptions
 //        {
