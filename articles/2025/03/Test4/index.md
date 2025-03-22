@@ -18,8 +18,20 @@ iwr -useb get.scoop.sh | iex
 
 
 
+
+    ![](./D8A884AA103CA91AB522FCDAAC79892C.png)
+
+
 weqweqewqw
 fghfghfghf
+
+
+
+
+
+jnjnjnjnjnjnj
+
+
 
 
 
