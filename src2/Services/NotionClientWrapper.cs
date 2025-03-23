@@ -11,27 +11,20 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
     {
         var allPages = new List<Page>();
         var filter = new CheckboxFilter(requestPublishingPropertyName, true);
-        var pagination = await client.Databases.QueryAsync(databaseId, new DatabasesQueryParameters
-        {
-            Filter = filter
-        });
+        string? nextCursor = null;
 
         do
         {
-            allPages.AddRange(pagination.Results);
-
-            if (!pagination.HasMore)
-            {
-                break;
-            }
-
-            pagination = await client.Databases.QueryAsync(databaseId, new DatabasesQueryParameters
+            var pagination = await client.Databases.QueryAsync(databaseId, new DatabasesQueryParameters
             {
                 Filter = filter,
-                StartCursor = pagination.NextCursor
+                StartCursor = nextCursor
             });
 
-        } while (true);
+            allPages.AddRange(pagination.Results);
+            nextCursor = pagination.HasMore ? pagination.NextCursor : null;
+        } while (nextCursor != null);
+
 
         return allPages;
     }

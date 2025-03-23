@@ -21,16 +21,18 @@ public class NotionExporter(
 
         foreach (var page in pages)
         {
-            if (await ExportPageAsync(page, now))
+            if (!await ExportPageAsync(page, now))
             {
-                await notionClient.UpdatePagePropertiesAsync(
-                    page.Id,
-                    config.NotionProperties.CrawledAtPropertyName,
-                    config.NotionProperties.RequestPublishingPropertyName,
-                    now);
-
-                exportedCount++;
+                continue;
             }
+
+            await notionClient.UpdatePagePropertiesAsync(
+                page.Id,
+                config.NotionProperties.CrawledAtPropertyName,
+                config.NotionProperties.RequestPublishingPropertyName,
+                now);
+
+            exportedCount++;
         }
 
         UpdateGitHubEnvironment(exportedCount);
@@ -38,27 +40,36 @@ public class NotionExporter(
 
     private async Task<bool> ExportPageAsync(Page page, DateTime now)
     {
-        var pageData = await notionClient.ExtractPageDataAsync(page, config.NotionProperties);
-
-        if (!ShouldExportPage(pageData, now))
+        try
         {
+            var pageData = await notionClient.ExtractPageDataAsync(page, config.NotionProperties);
+
+            if (!ShouldExportPage(pageData, now))
+            {
+                return false;
+            }
+
+            var outputDirectory = BuildOutputDirectory(pageData);
+            Directory.CreateDirectory(outputDirectory);
+
+            var markdown = await markdownGenerator.GenerateMarkdownAsync(
+                page,
+                pageData,
+                outputDirectory);
+
+            await File.WriteAllTextAsync(
+                Path.Combine(outputDirectory, "index.md"),
+                markdown,
+                new UTF8Encoding(false));
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting page {page.Id}: {ex.Message}");
+            // 詳細なログ記録や監視システムへの通知をここに追加
             return false;
         }
-
-        var outputDirectory = BuildOutputDirectory(pageData);
-        Directory.CreateDirectory(outputDirectory);
-
-        var markdown = await markdownGenerator.GenerateMarkdownAsync(
-            page,
-            pageData,
-            outputDirectory);
-
-        await File.WriteAllTextAsync(
-            Path.Combine(outputDirectory, "index.md"),
-            markdown,
-            new UTF8Encoding(false));
-
-        return true;
     }
 
     private bool ShouldExportPage(PageData pageData, DateTime now)
