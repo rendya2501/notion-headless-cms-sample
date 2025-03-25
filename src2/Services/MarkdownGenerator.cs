@@ -15,7 +15,7 @@ public class MarkdownGenerator(
         var sb = new StringBuilder();
 
         // FrontMatterの生成
-        await AppendFrontMatterAsync(sb, page, pageData, outputDirectory);
+        await AppendFrontMatterAsync(sb, pageData, outputDirectory);
 
         // ページコンテンツの取得と変換
         var blocks = await notionClient.GetPageBlocksAsync(page.Id);
@@ -26,7 +26,6 @@ public class MarkdownGenerator(
 
     private async Task AppendFrontMatterAsync(
         StringBuilder sb,
-        Page page,
         PageData pageData,
         string outputDirectory)
     {
@@ -121,32 +120,82 @@ public class MarkdownGenerator(
                 AppendBookmark(sb, bookmarkBlock, indent);
                 break;
 
+            case QuoteBlock quoteBlock:
+                AppendQuote(sb, quoteBlock, indent);
+                break;
+
+            case CalloutBlock calloutBlock:
+                AppendCallout(sb, calloutBlock, indent);
+                break;
+
+            case ToggleBlock toggleBlock:
+                AppendToggle(sb, toggleBlock, indent);
+                break;
+
             case DividerBlock _:
                 sb.AppendLine($"{indent}---");
                 break;
 
+            case TableBlock _:
+                // テーブルは子ブロックとして処理
+                break;
+
+            case TableRowBlock tableRow:
+                AppendTableRow(sb, tableRow, indent);
+                break;
+
             default:
-                // 未対応のブロックタイプ
+                // 未対応のブロックタイプの場合はプレーンテキストを試みる
+                AppendUnknownBlock(sb, block, indent);
                 break;
         }
-
-        sb.AppendLine();
 
         // 子ブロックの処理
         if (block.HasChildren)
         {
+            string childIndent = block switch
+            {
+                QuoteBlock or CalloutBlock => $"{indent}> ",
+                BulletedListItemBlock or NumberedListItemBlock => $"{indent}    ",
+                _ => indent
+            };
+
             var childBlocks = await notionClient.GetChildBlocksAsync(block.Id);
-            await AppendBlocksAsync(sb, childBlocks, $"{indent}    ", outputDirectory);
+            await AppendBlocksAsync(sb, childBlocks, childIndent, outputDirectory);
+            return;
         }
     }
 
     private void AppendParagraph(StringBuilder sb, ParagraphBlock paragraphBlock, string indent)
     {
-        sb.Append(indent);
-
-        foreach (var richText in paragraphBlock.Paragraph.RichText)
+        var richTexts = paragraphBlock.Paragraph.RichText;
+        if (!richTexts.Any())
         {
-            AppendRichText(sb, richText);
+            sb.AppendLine(indent);
+            return;
+        }
+
+        foreach (var richText in richTexts)
+        {
+            var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    sb.AppendLine(indent);
+                    continue;
+                }
+                sb.Append(indent);
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line,
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                sb.Append("  ");
+                sb.AppendLine();
+            }
         }
     }
 
@@ -178,42 +227,74 @@ public class MarkdownGenerator(
         if (!string.IsNullOrEmpty(url))
         {
             var (fileName, _) = await ImageDownloader.DownloadImageAsync(url, outputDirectory);
-            sb.Append($"{indent}![](./{fileName})");
+            sb.AppendLine($"{indent}![](./{fileName})");
         }
     }
 
     private void AppendCode(StringBuilder sb, CodeBlock codeBlock, string indent)
     {
         var language = MapCodeLanguage(codeBlock.Code.Language);
-        sb.AppendLine($"{indent}```{language}");
+        sb.AppendLine($"{indent}``` {language}");
 
         foreach (var richText in codeBlock.Code.RichText)
         {
-            sb.Append(indent);
-            sb.Append(richText.PlainText.Replace("\t", "    "));
-            sb.AppendLine();
+            var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                sb.Append(indent);
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line.Replace("\t", "    "),
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                sb.AppendLine();
+            }
         }
 
         sb.AppendLine($"{indent}```");
+
+        static string MapCodeLanguage(string notionLanguage)
+        {
+            return notionLanguage switch
+            {
+                "c#" => "csharp",
+                _ => notionLanguage
+            };
+        }
     }
 
-    private string MapCodeLanguage(string notionLanguage)
-    {
-        return notionLanguage switch
-        {
-            "c#" => "csharp",
-            _ => notionLanguage
-        };
-    }
 
     private void AppendBulletListItem(StringBuilder sb, BulletedListItemBlock bulletListItem, string indent)
     {
-        sb.Append($"{indent}* ");
+        sb.Append($"{indent}- ");
 
         foreach (var richText in bulletListItem.BulletedListItem.RichText)
         {
-            AppendRichText(sb, richText);
+            var lines = richText.PlainText
+                .Split([Environment.NewLine, "\n"], StringSplitOptions.None)
+                .Select((text, index) => new { text, index });
+            foreach (var line in lines)
+            {
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line.text,
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+                // 最後の要素以外に対して改行を追加
+                if (line.index < lines.Count() - 1)
+                {
+                    sb.AppendLine();
+                    sb.Append($"{indent}  ");
+                }
+            }
         }
+
+        sb.AppendLine();
     }
 
     private void AppendNumberedListItem(StringBuilder sb, NumberedListItemBlock numberedListItem, string indent)
@@ -222,8 +303,29 @@ public class MarkdownGenerator(
 
         foreach (var richText in numberedListItem.NumberedListItem.RichText)
         {
-            AppendRichText(sb, richText);
+            var lines = richText.PlainText
+                .Split([Environment.NewLine, "\n"], StringSplitOptions.None)
+                .Select((text, index) => new { text, index });
+            foreach (var line in lines)
+            {
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line.text,
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+                // 最後の要素以外に対して改行を追加
+                if (line.index < lines.Count() - 1)
+                {
+                    sb.AppendLine();
+                    sb.Append($"{indent}   ");
+                }
+            }
         }
+
+        sb.AppendLine();
     }
 
     private void AppendBookmark(StringBuilder sb, BookmarkBlock bookmarkBlock, string indent)
@@ -233,14 +335,96 @@ public class MarkdownGenerator(
 
         sb.Append(indent);
 
-        if (!string.IsNullOrEmpty(caption))
+        if (!string.IsNullOrWhiteSpace(caption))
         {
             sb.Append($"[{caption}]({url})");
+            return;
         }
-        else
+
+        sb.Append($"<{url}>");
+    }
+
+    private void AppendQuote(StringBuilder sb, QuoteBlock quoteBlock, string indent)
+    {
+        foreach (var richText in quoteBlock.Quote.RichText)
         {
-            sb.Append($"<{url}>");
+            var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                sb.Append($"{indent}> ");
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line,
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+                sb.AppendLine();
+            }
         }
+    }
+
+    private void AppendCallout(StringBuilder sb, CalloutBlock calloutBlock, string indent)
+    {
+        foreach (var richText in calloutBlock.Callout.RichText)
+        {
+            var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                sb.Append($"{indent}> ");
+                var tempRichText = new RichTextBase
+                {
+                    PlainText = line,
+                    Annotations = richText.Annotations,
+                    Href = richText.Href
+                };
+                AppendRichText(sb, tempRichText);
+                if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+                sb.AppendLine();
+            }
+        }
+    }
+
+    private void AppendToggle(StringBuilder sb, ToggleBlock toggleBlock, string indent)
+    {
+        // トグルをマークダウンの詳細表示として変換（<details>）
+        sb.AppendLine($"{indent}<details>");
+        sb.Append($"{indent}<summary>");
+
+        foreach (var richText in toggleBlock.Toggle.RichText)
+        {
+            AppendRichText(sb, richText);
+        }
+
+        sb.AppendLine("</summary>");
+        // 子要素はAppendBlockAsyncで処理される
+        sb.AppendLine($"{indent}</details>");
+    }
+
+    private void AppendTableRow(StringBuilder sb, TableRowBlock tableRow, string indent)
+    {
+        sb.Append(indent);
+        sb.Append("| ");
+
+        foreach (var cell in tableRow.TableRow.Cells)
+        {
+            foreach (var richText in cell)
+            {
+                AppendRichText(sb, richText);
+            }
+            sb.Append(" | ");
+        }
+
+        sb.AppendLine();
+    }
+
+    private void AppendUnknownBlock(StringBuilder sb, Block block, string indent)
+    {
+        sb.Append(indent);
+        sb.Append("<!-- Unsupported block type: ");
+        sb.Append(block.Type);
+        sb.Append(" -->");
     }
 
     private void AppendRichText(StringBuilder sb, RichTextBase richText)

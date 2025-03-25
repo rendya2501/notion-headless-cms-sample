@@ -128,48 +128,30 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 
     public async Task<List<Block>> GetPageBlocksAsync(string pageId)
     {
-        var allBlocks = new List<Block>();
-        var pagination = await client.Blocks.RetrieveChildrenAsync(pageId);
-
-        do
-        {
-            allBlocks.AddRange(pagination.Results.Cast<Block>());
-
-            if (!pagination.HasMore)
-            {
-                break;
-            }
-
-            pagination = await client.Blocks.RetrieveChildrenAsync(pageId, new BlocksRetrieveChildrenParameters
-            {
-                StartCursor = pagination.NextCursor
-            });
-
-        } while (true);
-
-        return allBlocks;
+        return await RetrieveAllBlocksAsync(pageId);
     }
 
     public async Task<List<Block>> GetChildBlocksAsync(string blockId)
     {
+        return await RetrieveAllBlocksAsync(blockId);
+    }
+
+    private async Task<List<Block>> RetrieveAllBlocksAsync(string id)
+    {
         var allBlocks = new List<Block>();
-        var pagination = await client.Blocks.RetrieveChildrenAsync(blockId);
+        string? nextCursor = null;
 
         do
         {
-            allBlocks.AddRange(pagination.Results.Cast<Block>());
-
-            if (!pagination.HasMore)
+            var pagination = await client.Blocks.RetrieveChildrenAsync(id, new BlocksRetrieveChildrenParameters
             {
-                break;
-            }
-
-            pagination = await client.Blocks.RetrieveChildrenAsync(blockId, new BlocksRetrieveChildrenParameters
-            {
-                StartCursor = pagination.NextCursor
+                StartCursor = nextCursor
             });
 
-        } while (true);
+            allBlocks.AddRange(pagination.Results.Cast<Block>());
+            nextCursor = pagination.HasMore ? pagination.NextCursor : null;
+
+        } while (nextCursor != null);
 
         return allBlocks;
     }
