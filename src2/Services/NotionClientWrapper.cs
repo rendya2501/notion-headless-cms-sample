@@ -126,24 +126,14 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         });
     }
 
-    public async Task<List<Block>> GetPageBlocksAsync(string pageId)
-    {
-        return await RetrieveAllBlocksAsync(pageId);
-    }
-
-    public async Task<List<Block>> GetChildBlocksAsync(string blockId)
-    {
-        return await RetrieveAllBlocksAsync(blockId);
-    }
-
-    private async Task<List<Block>> RetrieveAllBlocksAsync(string id)
+    public async Task<List<Block>> GetBlocksAsync(string blockId)
     {
         var allBlocks = new List<Block>();
         string? nextCursor = null;
 
         do
         {
-            var pagination = await client.Blocks.RetrieveChildrenAsync(id, new BlocksRetrieveChildrenParameters
+            var pagination = await client.Blocks.RetrieveChildrenAsync(blockId, new BlocksRetrieveChildrenParameters
             {
                 StartCursor = nextCursor
             });
@@ -155,4 +145,31 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 
         return allBlocks;
     }
+
+    //public async Task<List<Block>> GetBlocksAsync(string blockId)
+    //{
+    //    return await RetrieveAllItemsAsync(
+    //        async (parameters) => await client.Blocks.RetrieveChildrenAsync(blockId, parameters),
+    //        new BlocksRetrieveChildrenParameters()
+    //    );
+    //}
+
+    //private async Task<List<Block>> RetrieveAllItemsAsync(
+    //    Func<BlocksRetrieveChildrenParameters, Task<PaginatedList<IBlock>>> retrievalFunc,
+    //    BlocksRetrieveChildrenParameters initialParameters)
+    //{
+    //    var allItems = new List<Block>();
+    //    initialParameters.StartCursor = null;
+
+    //    do
+    //    {
+    //        var pagination = await retrievalFunc(initialParameters);
+
+    //        allItems.AddRange(pagination.Results.Cast<Block>());
+    //        initialParameters.StartCursor = pagination.HasMore ? pagination.NextCursor : null;
+
+    //    } while (initialParameters.StartCursor != null);
+
+    //    return allItems;
+    //}
 }

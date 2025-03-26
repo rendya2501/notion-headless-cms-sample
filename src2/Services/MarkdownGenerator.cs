@@ -18,11 +18,14 @@ public class MarkdownGenerator(
         await AppendFrontMatterAsync(sb, pageData, outputDirectory);
 
         // ページコンテンツの取得と変換
-        var blocks = await notionClient.GetPageBlocksAsync(page.Id);
-        await AppendBlocksAsync(sb, blocks, string.Empty, outputDirectory);
+        var blocks = await notionClient.GetBlocksAsync(page.Id);
+        var listCount = new Stack<int>();
+        listCount.Push(0);
+        await AppendBlocksAsync(sb, blocks, string.Empty, outputDirectory, listCount);
 
         return sb.ToString();
     }
+
 
     private async Task AppendFrontMatterAsync(
         StringBuilder sb,
@@ -56,7 +59,7 @@ public class MarkdownGenerator(
 
         if (!string.IsNullOrEmpty(pageData.CoverImageUrl))
         {
-            var (fileName, _) = await ImageDownloader.DownloadImageAsync(pageData.CoverImageUrl, outputDirectory);
+            var fileName = await ImageDownloader.DownloadImageAsync(pageData.CoverImageUrl, outputDirectory);
             sb.AppendLine($"{config.FrontMatter.EyecatchName}: \"./{fileName}\"");
         }
 
@@ -68,11 +71,23 @@ public class MarkdownGenerator(
         StringBuilder sb,
         List<Block> blocks,
         string indent,
-        string outputDirectory)
+        string outputDirectory,
+        Stack<int> listCounter)
     {
+        Block? previousBlock = null;
+
         foreach (var block in blocks)
         {
-            await AppendBlockAsync(sb, block, indent, outputDirectory);
+            // 直前のブロックがリストで、今回がリストじゃない場合はリセット
+            if (previousBlock is NumberedListItemBlock && block is not NumberedListItemBlock)
+            {
+                listCounter.Clear();
+                listCounter.Push(0);
+            }
+
+            await AppendBlockAsync(sb, block, indent, outputDirectory, listCounter);
+
+            previousBlock = block;
         }
     }
 
@@ -80,7 +95,8 @@ public class MarkdownGenerator(
         StringBuilder sb,
         Block block,
         string indent,
-        string outputDirectory)
+        string outputDirectory,
+        Stack<int> listCounters)
     {
         switch (block)
         {
@@ -113,7 +129,7 @@ public class MarkdownGenerator(
                 break;
 
             case NumberedListItemBlock numberedListItem:
-                AppendNumberedListItem(sb, numberedListItem, indent);
+                AppendNumberedListItem(sb, numberedListItem, indent, listCounters);
                 break;
 
             case BookmarkBlock bookmarkBlock:
@@ -153,6 +169,8 @@ public class MarkdownGenerator(
         // 子ブロックの処理
         if (block.HasChildren)
         {
+            listCounters.Push(0);
+
             string childIndent = block switch
             {
                 QuoteBlock or CalloutBlock => $"{indent}> ",
@@ -160,9 +178,11 @@ public class MarkdownGenerator(
                 _ => indent
             };
 
-            var childBlocks = await notionClient.GetChildBlocksAsync(block.Id);
-            await AppendBlocksAsync(sb, childBlocks, childIndent, outputDirectory);
-            return;
+            var childBlocks = await notionClient.GetBlocksAsync(block.Id);
+            await AppendBlocksAsync(sb, childBlocks, childIndent, outputDirectory, listCounters);
+
+            // 階層のカウンターを削除
+            listCounters.Pop();
         }
     }
 
@@ -226,7 +246,7 @@ public class MarkdownGenerator(
 
         if (!string.IsNullOrEmpty(url))
         {
-            var (fileName, _) = await ImageDownloader.DownloadImageAsync(url, outputDirectory);
+            var fileName = await ImageDownloader.DownloadImageAsync(url, outputDirectory);
             sb.AppendLine($"{indent}![](./{fileName})");
         }
     }
@@ -297,9 +317,12 @@ public class MarkdownGenerator(
         sb.AppendLine();
     }
 
-    private void AppendNumberedListItem(StringBuilder sb, NumberedListItemBlock numberedListItem, string indent)
+    private void AppendNumberedListItem(StringBuilder sb, NumberedListItemBlock numberedListItem, string indent, Stack<int> listCounters)
     {
-        sb.Append($"{indent}1. ");
+        listCounters.Push(listCounters.Pop() + 1);
+        int currentNumber = listCounters.Peek();
+
+        sb.Append($"{indent}{currentNumber}. ");
 
         foreach (var richText in numberedListItem.NumberedListItem.RichText)
         {
