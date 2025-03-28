@@ -2,12 +2,9 @@ namespace hoge.Configuration;
 
 public class AppConfiguration
 {
-    public string NotionAuthToken { get; private set; }
-    public string NotionDatabaseId { get; private set; }
-    public string OutputDirectoryPathTemplate { get; private set; }
-
-    public FrontMatterConfig FrontMatter { get; } = new FrontMatterConfig();
-    public NotionPropertyConfig NotionProperties { get; } = new NotionPropertyConfig();
+    public string NotionAuthToken { get; private set; } = string.Empty;
+    public string NotionDatabaseId { get; private set; } = string.Empty;
+    public string OutputDirectoryPathTemplate { get; private set; } = string.Empty;
 
     public static AppConfiguration FromCommandLine(string[] args)
     {

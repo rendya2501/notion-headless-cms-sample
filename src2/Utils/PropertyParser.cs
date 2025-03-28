@@ -41,11 +41,11 @@ public static class PropertyParser
         switch (value)
         {
             case RichTextPropertyValue richTextProperty:
-                text = string.Join("", richTextProperty.RichText.Select(rt => rt.PlainText));
+                text = string.Join(string.Empty, richTextProperty.RichText.Select(rt => rt.PlainText));
                 return true;
 
             case TitlePropertyValue titleProperty:
-                text = string.Join("", titleProperty.Title.Select(t => t.PlainText));
+                text = string.Join(string.Empty, titleProperty.Title.Select(t => t.PlainText));
                 return true;
 
             case SelectPropertyValue selectProperty:

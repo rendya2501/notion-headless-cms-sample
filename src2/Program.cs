@@ -20,6 +20,8 @@ services.AddSingleton<INotionClient>(provider =>
 
 // サービスの登録
 services.AddSingleton<INotionClientWrapper, NotionClientWrapper>();
+services.AddSingleton<IHeaderGenerator, HeaderGenerator>();
+services.AddSingleton<IContentGenerator, ContentGenerator>();
 services.AddSingleton<IMarkdownGenerator, MarkdownGenerator>();
 services.AddSingleton<INotionExporter, NotionExporter>();
 
@@ -44,4 +46,12 @@ if (serviceProvider is IDisposable disposable)
 //var exporter = new NotionExporter(config);
 //await exporter.ExportPagesAsync();
 
+
+// NotionClientの作成
+// プロパティの取得
+// ページの取得
+// プロパティとページの情報からマークダウンの作成
+// 後始末処理
+
+// マークダウン変換処理をライブラリとして捉える
 
