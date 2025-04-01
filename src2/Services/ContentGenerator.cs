@@ -110,66 +110,7 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
             }
         }
 
-        //for (int i = 0; i < blocks.Count; i++)
-        //{
-        //    var block = blocks[i];
-        //    context.CurrentBlock = block;
-        //    context.CurrentBlockIndex = i;
-
-        //    var originalBlock = block.GetOriginalBlock<Block>();
-        //    if (transformers.TryGetValue(originalBlock.GetType(), out var transformer))
-        //    {
-        //        var transformed = transformer(context);
-        //        transformedBlocks.Add(transformed);
-        //    }
-        //}
-
         return string.Join("\n", transformedBlocks.Where(b => !string.IsNullOrEmpty(b)));
-    }
-
-    private static PageData CopyPageProperties(Page page)
-    {
-        var pageData = new PageData
-        {
-            Id = page.Id,
-            CreatedTime = page.CreatedTime,
-            LastEditedTime = page.LastEditedTime,
-            Archived = page.Archived,
-            Icon = page.Icon switch
-            {
-                EmojiObject emoji => emoji.Emoji,
-                FileObject file => file.File.Url,
-                _ => string.Empty
-            },
-            Cover = page.Cover switch
-            {
-                ExternalFileObject external => external.External.Url,
-                FileObject file => file.File.Url,
-                _ => string.Empty
-            }
-        };
-
-        foreach (var property in page.Properties)
-        {
-            pageData.Properties[property.Key] = property.Value switch
-            {
-                TitlePropertyValue title => title.Title.FirstOrDefault()?.PlainText ?? string.Empty,
-                RichTextPropertyValue richText => richText.RichText.FirstOrDefault()?.PlainText ?? string.Empty,
-                NumberPropertyValue number => number.Number?.ToString() ?? string.Empty,
-                SelectPropertyValue select => select.Select?.Name ?? string.Empty,
-                MultiSelectPropertyValue multiSelect => string.Join(",", multiSelect.MultiSelect.Select(x => x.Name)),
-                DatePropertyValue date => date.Date?.Start.ToString() ?? string.Empty,
-                PeoplePropertyValue people => string.Join(",", people.People.Select(x => x.Name)),
-                FilesPropertyValue files => string.Join(",", files.Files.Select(x => x.Name)),
-                CheckboxPropertyValue checkbox => checkbox.Checkbox.ToString(),
-                EmailPropertyValue email => email.Email ?? string.Empty,
-                PhoneNumberPropertyValue phone => phone.PhoneNumber ?? string.Empty,
-                UrlPropertyValue url => url.Url ?? string.Empty,
-                _ => string.Empty
-            };
-        }
-
-        return pageData;
     }
 
     ///// <summary>
