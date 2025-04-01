@@ -8,8 +8,6 @@ namespace hoge.Services;
 
 public class ContentGenerator(AppConfiguration config, INotionClientWrapper notionClient) : IContentGenerator
 {
-    private readonly StringBuilder sb = new();
-
     private readonly Dictionary<Type, Func<Context, string>> transformers = new()
     {
         { typeof(BookmarkBlock), Transformer.CreateMarkdownBookmarkTransformer() },

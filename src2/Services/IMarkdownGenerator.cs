@@ -3,5 +3,5 @@ namespace hoge.Services;
 
 public interface IMarkdownGenerator
 {
-    Task<string> GenerateMarkdownAsync(PageData pageData, string outputDirectory);
+    Task<string> GenerateMarkdownAsync(PageProperty pageProperty, string outputDirectory);
 }

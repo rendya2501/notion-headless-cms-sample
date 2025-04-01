@@ -85,29 +85,29 @@ public class NotionExporter(
     /// <summary>
     /// ページをエクスポートするかどうかを判定します。
     /// </summary>
-    /// <param name="pageData"></param>
+    /// <param name="pageProperty"></param>
     /// <param name="now"></param>
     /// <returns></returns>
-    private bool ShouldExportPage(PageData pageData, DateTime now)
+    private bool ShouldExportPage(PageProperty pageProperty, DateTime now)
     {
         // リクエスト公開が無効な場合はスキップ
-        if (!pageData.RequestPublishing)
+        if (!pageProperty.RequestPublishing)
         {
-            Console.WriteLine($"{pageData.PageId}(title = {pageData.Title}): No request publishing.");
+            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): No request publishing.");
             return false;
         }
 
         // 公開日時が未設定の場合はスキップ
-        if (!pageData.PublishedDateTime.HasValue)
+        if (!pageProperty.PublishedDateTime.HasValue)
         {
-            Console.WriteLine($"{pageData.PageId}(title = {pageData.Title}): Missing publish date.");
+            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): Missing publish date.");
             return false;
         }
 
         // 公開日時が未来の場合はスキップ
-        if (now < pageData.PublishedDateTime.Value)
+        if (now < pageProperty.PublishedDateTime.Value)
         {
-            Console.WriteLine($"{pageData.PageId}(title = {pageData.Title}): Publication date not reached.");
+            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): Publication date not reached.");
             return false;
         }
 
@@ -117,20 +117,20 @@ public class NotionExporter(
     /// <summary>
     /// 出力ディレクトリを構築します。
     /// </summary>
-    /// <param name="pageData"></param>
+    /// <param name="pageProperty"></param>
     /// <returns></returns>
-    private string BuildOutputDirectory(PageData pageData)
+    private string BuildOutputDirectory(PageProperty pageProperty)
     {
         // 出力ディレクトリパスのテンプレートをパース
         var template = Scriban.Template.Parse(config.OutputDirectoryPathTemplate);
-        // スラッグが未設定の場合はタイトルを使用
-        var slug = string.IsNullOrEmpty(pageData.Slug) ? pageData.Title : pageData.Slug;
+        // スラッグが設定されている場合はそれを使用、未設定の場合はタイトルを使用
+        var slug = !string.IsNullOrEmpty(pageProperty.Slug) ? pageProperty.Slug : pageProperty.Title;
 
         // 出力ディレクトリパスをレンダリング
         return template.Render(new
         {
-            publish = pageData.PublishedDateTime.Value,
-            title = pageData.Title,
+            publish = pageProperty.PublishedDateTime.Value,
+            title = pageProperty.Title,
             slug = slug
         });
     }

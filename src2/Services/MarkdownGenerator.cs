@@ -12,13 +12,13 @@ public class MarkdownGenerator(IFrontmatterGenerator frontmatterGenerator, ICont
     /// <summary>
     /// マークダウンを生成します。
     /// </summary>
-    /// <param name="pageData"></param>
+    /// <param name="pageProperty"></param>
     /// <param name="outputDirectory"></param>
     /// <returns></returns>
-    public async Task<string> GenerateMarkdownAsync(PageData pageData, string outputDirectory)
+    public async Task<string> GenerateMarkdownAsync(PageProperty pageProperty, string outputDirectory)
     {
-        var frontmatter = frontmatterGenerator.GenerateFrontmatter(pageData);
-        var content = await contentGenerator.GenerateContentAsync(pageData.PageId, outputDirectory);
+        var frontmatter = frontmatterGenerator.GenerateFrontmatter(pageProperty);
+        var content = await contentGenerator.GenerateContentAsync(pageProperty.PageId, outputDirectory);
 
         return $"{frontmatter}{content}";
     }

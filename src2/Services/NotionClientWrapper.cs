@@ -6,26 +6,20 @@ namespace hoge.Services;
 
 public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 {
-    /// <summary>
-    /// Notion のプロパティ名を定義します。
-    /// </summary>
-    private class NotionPropertyConstants
-    {
-        public const string TitlePropertyName = "Title";
-        public const string TypePropertyName = "Type";
-        public const string PublishedAtPropertyName = "PublishedAt";
-        public const string RequestPublishingPropertyName = "RequestPublishing";
-        public const string CrawledAtPropertyName = "_SystemCrawledAt";
-        public const string TagsPropertyName = "Tags";
-        public const string DescriptionPropertyName = "Description";
-        public const string SlugPropertyName = "Slug";
-    }
+    private const string TitlePropertyName = "Title";
+    private const string TypePropertyName = "Type";
+    private const string PublishedAtPropertyName = "PublishedAt";
+    private const string RequestPublishingPropertyName = "RequestPublishing";
+    private const string CrawledAtPropertyName = "_SystemCrawledAt";
+    private const string TagsPropertyName = "Tags";
+    private const string DescriptionPropertyName = "Description";
+    private const string SlugPropertyName = "Slug";
 
 
     public async Task<List<Page>> GetPagesForPublishingAsync(string databaseId)
     {
         var allPages = new List<Page>();
-        var filter = new CheckboxFilter(NotionPropertyConstants.RequestPublishingPropertyName, true);
+        var filter = new CheckboxFilter(RequestPublishingPropertyName, true);
         string? nextCursor = null;
 
         do
@@ -44,71 +38,71 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         return allPages;
     }
 
-    public PageData CopyPageProperties(Page page)
+    public PageProperty CopyPageProperties(Page page)
     {
-        var pageData = new PageData { PageId = page.Id };
+        var pageProperty = new PageProperty { PageId = page.Id };
 
         foreach (var property in page.Properties)
         {
-            if (property.Key == NotionPropertyConstants.PublishedAtPropertyName)
+            if (property.Key == PublishedAtPropertyName)
             {
                 if (PropertyParser.TryParseAsDateTime(property.Value, out var publishedAt))
                 {
-                    pageData.PublishedDateTime = publishedAt;
+                    pageProperty.PublishedDateTime = publishedAt;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.CrawledAtPropertyName)
+            else if (property.Key == CrawledAtPropertyName)
             {
                 if (PropertyParser.TryParseAsDateTime(property.Value, out var crawledAt))
                 {
-                    pageData.LastCrawledDateTime = crawledAt;
+                    pageProperty.LastCrawledDateTime = crawledAt;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.SlugPropertyName)
+            else if (property.Key == SlugPropertyName)
             {
                 if (PropertyParser.TryParseAsPlainText(property.Value, out var slug))
                 {
-                    pageData.Slug = slug;
+                    pageProperty.Slug = slug;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.TitlePropertyName)
+            else if (property.Key == TitlePropertyName)
             {
                 if (PropertyParser.TryParseAsPlainText(property.Value, out var title))
                 {
-                    pageData.Title = title;
+                    pageProperty.Title = title;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.DescriptionPropertyName)
+            else if (property.Key == DescriptionPropertyName)
             {
                 if (PropertyParser.TryParseAsPlainText(property.Value, out var description))
                 {
-                    pageData.Description = description;
+                    pageProperty.Description = description;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.TagsPropertyName)
+            else if (property.Key == TagsPropertyName)
             {
                 if (PropertyParser.TryParseAsStringList(property.Value, out var tags))
                 {
-                    pageData.Tags = tags;
+                    pageProperty.Tags = tags;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.TypePropertyName)
+            else if (property.Key == TypePropertyName)
             {
                 if (PropertyParser.TryParseAsPlainText(property.Value, out var type))
                 {
-                    pageData.Type = type;
+                    pageProperty.Type = type;
                 }
             }
-            else if (property.Key == NotionPropertyConstants.RequestPublishingPropertyName)
+            else if (property.Key == RequestPublishingPropertyName)
             {
                 if (PropertyParser.TryParseAsBoolean(property.Value, out var requestPublishing))
                 {
-                    pageData.RequestPublishing = requestPublishing;
+                    pageProperty.RequestPublishing = requestPublishing;
                 }
             }
         }
 
-        return pageData;
+        return pageProperty;
     }
 
     public async Task UpdatePagePropertiesAsync(string pageId, DateTime now)
@@ -117,14 +111,14 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         {
             Properties = new Dictionary<string, PropertyValue>
             {
-                [NotionPropertyConstants.CrawledAtPropertyName] = new DatePropertyValue
+                [CrawledAtPropertyName] = new DatePropertyValue
                 {
                     Date = new Date
                     {
                         Start = now
                     }
                 },
-                [NotionPropertyConstants.RequestPublishingPropertyName] = new CheckboxPropertyValue
+                [RequestPublishingPropertyName] = new CheckboxPropertyValue
                 {
                     Checkbox = false
                 },

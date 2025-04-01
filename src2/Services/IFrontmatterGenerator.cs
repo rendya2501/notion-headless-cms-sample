@@ -5,5 +5,5 @@ namespace hoge.Services;
 
 public interface IFrontmatterGenerator
 {
-    StringBuilder GenerateFrontmatter(PageData pageData);
+    StringBuilder GenerateFrontmatter(PageProperty pageProperty);
 }

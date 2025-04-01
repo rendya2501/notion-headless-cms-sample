@@ -6,7 +6,7 @@ namespace hoge.Services;
 /// <summary>
 /// フロントマターを生成するクラスです。
 /// </summary>
-public class HeaderGenerator : IFrontmatterGenerator
+public class FrontmatterGenerator : IFrontmatterGenerator
 {
     private const string TitleName = "title";
     private const string TypeName = "type";
@@ -14,13 +14,12 @@ public class HeaderGenerator : IFrontmatterGenerator
     private const string DescriptionName = "description";
     private const string TagsName = "tags";
 
-
     /// <summary>
-    /// フロントマターを追加します。
+    /// フロントマターを生成します。
     /// </summary>
     /// <param name="pageData"></param>
     /// <returns></returns>
-    public StringBuilder GenerateFrontmatter(PageData pageData)
+    public StringBuilder GenerateFrontmatter(PageProperty pageData)
     {
         var sb = new StringBuilder();
 

@@ -11,7 +11,7 @@ public interface INotionClientWrapper
     /// </summary>
     /// <param name="page"></param>
     /// <returns></returns>
-    PageData CopyPageProperties(Page page);
+    PageProperty CopyPageProperties(Page page);
     Task UpdatePagePropertiesAsync(string pageId, DateTime now);
     Task<List<Block>> GetBlocksAsync(string blockId);
     Task<List<NotionBlock>> GetPageFullContent(string blockId);

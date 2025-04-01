@@ -1,9 +1,9 @@
 namespace hoge.Models;
 
 /// <summary>
-/// ページデータ
+/// ページのプロパティを表します。
 /// </summary>
-public class PageData
+public class PageProperty
 {
     public string PageId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
