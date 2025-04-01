@@ -70,7 +70,7 @@ public enum BulletStyle
 /// </summary>
 public class TableCell
 {
-    public string Content { get; set; }
+    public required string Content { get; set; }
 }
 
 /// <summary>
@@ -78,7 +78,7 @@ public class TableCell
 /// </summary>
 public class TableHeader
 {
-    public string Content { get; set; }
+    public required string Content { get; set; }
     public Alignment Alignment { get; set; }
 }
 public enum Alignment

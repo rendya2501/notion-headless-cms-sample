@@ -1,52 +1,57 @@
-using hoge.Constants;
 using hoge.Models;
-using hoge.Utils;
 using System.Text;
 
 namespace hoge.Services;
 
-public class HeaderGenerator : IHeaderGenerator
+/// <summary>
+/// フロントマターを生成するクラスです。
+/// </summary>
+public class HeaderGenerator : IFrontmatterGenerator
 {
+    private const string TitleName = "title";
+    private const string TypeName = "type";
+    private const string PublishedName = "date";
+    private const string DescriptionName = "description";
+    private const string TagsName = "tags";
+
+
     /// <summary>
     /// フロントマターを追加します。
     /// </summary>
-    /// <param name="sb"></param>
     /// <param name="pageData"></param>
-    /// <param name="outputDirectory"></param>
     /// <returns></returns>
-    public async Task<StringBuilder> GenerateHeaderAsync(PageData pageData, string outputDirectory)
+    public StringBuilder GenerateFrontmatter(PageData pageData)
     {
         var sb = new StringBuilder();
 
         sb.AppendLine("---");
 
+        // タイプがあれば追加
         if (!string.IsNullOrWhiteSpace(pageData.Type))
         {
-            sb.AppendLine($"{FrontMatterConstants.TypeName}: \"{pageData.Type}\"");
+            sb.AppendLine($"{TypeName}: \"{pageData.Type}\"");
         }
 
-        sb.AppendLine($"{FrontMatterConstants.TitleName}: \"{pageData.Title}\"");
+        // タイトルは必須
+        sb.AppendLine($"{TitleName}: \"{pageData.Title}\"");
 
+        // 説明文があれば追加
         if (!string.IsNullOrWhiteSpace(pageData.Description))
         {
-            sb.AppendLine($"{FrontMatterConstants.DescriptionName}: \"{pageData.Description}\"");
+            sb.AppendLine($"{DescriptionName}: \"{pageData.Description}\"");
         }
 
+        // タグがあれば追加
         if (pageData.Tags.Count > 0)
         {
             var formattedTags = pageData.Tags.Select(tag => $"\"{tag}\"");
-            sb.AppendLine($"{FrontMatterConstants.TagsName}: [{string.Join(',', formattedTags)}]");
+            sb.AppendLine($"{TagsName}: [{string.Join(',', formattedTags)}]");
         }
 
+        // 公開日時があれば追加
         if (pageData.PublishedDateTime.HasValue)
         {
-            sb.AppendLine($"{FrontMatterConstants.PublishedName}: \"{pageData.PublishedDateTime.Value:s}\"");
-        }
-
-        if (!string.IsNullOrEmpty(pageData.CoverImageUrl))
-        {
-            var fileName = await ImageDownloader.DownloadImageAsync(pageData.CoverImageUrl, outputDirectory);
-            sb.AppendLine($"{FrontMatterConstants.EyecatchName}: \"./{fileName}\"");
+            sb.AppendLine($"{PublishedName}: \"{pageData.PublishedDateTime.Value:s}\"");
         }
 
         sb.AppendLine("---");
@@ -54,5 +59,4 @@ public class HeaderGenerator : IHeaderGenerator
 
         return sb;
     }
-
 }

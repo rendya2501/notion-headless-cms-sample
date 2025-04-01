@@ -1,13 +1,31 @@
-using hoge.Services;
+using hoge.Models;
+using Notion.Client;
 using static hoge.Utils.MarkdownUtils;
 
 namespace hoge.Utils;
 
 public static class Transformer
 {
-    public static Func<Context, string> CreateMarkdownBookmarkTransformer(BookmarkTransformerOptions? options = null)
+    public static Func<Context, string> CreateMarkdownBookmarkTransformer(
+        BookmarkTransformerOptions? options = null)
     {
         options ??= new BookmarkTransformerOptions();
+
+        string execute(BookmarkBlock block)
+        {
+            string caption = RichTextsToMarkdown(
+                block.Bookmark.Caption,
+                options.EnableAnnotations,
+                options.ColorMap
+            );
+            // ブックマークのキャプションが空の場合はURLを表示する
+            string text = !string.IsNullOrEmpty(caption)
+                ? caption
+                : block.Bookmark.Url;
+            return Link(text, block.Bookmark.Url);
+        }
+
+        return TransformerFactory.CreateBookmarkTransformerFactory(execute);
 
         return TransformerFactory.CreateBookmarkTransformerFactory(block =>
         {
@@ -16,9 +34,12 @@ public static class Transformer
                 options.EnableAnnotations,
                 options.ColorMap
             );
-
-            return Link(string.IsNullOrEmpty(caption) ? block.Bookmark.Url : caption, block.Bookmark.Url);
+            var text = string.IsNullOrEmpty(caption)
+                ? block.Bookmark.Url
+                : caption;
+            return Link(text, block.Bookmark.Url);
         });
+
         //    return context =>
         //    {
         //        var block = context.CurrentBlock as BookmarkBlock;
@@ -37,8 +58,6 @@ public static class Transformer
         //        //return $"[{caption}]({url})";
         //    };
     }
-
-
 
     public static Func<Context, string> CreateMarkdownBreadcrumbTransformer()
     {
@@ -92,11 +111,12 @@ public static class Transformer
         return context => "";
     }
 
-    public static Func<Context, string> CreateMarkdownNumberedListItemTransformer(NumberedListItemTransformerOptions? options = null)
+    public static Func<Context, string> CreateMarkdownNumberedListItemTransformer(
+        NumberedListItemTransformerOptions? options = null)
     {
         options ??= new NumberedListItemTransformerOptions();
 
-        return TransformerFactory.CreateNumberedListItemTransformerFactory(args =>
+        string execute((NumberedListItemBlock Block, string Children, int Index) args)
         {
             string text = RichTextsToMarkdown(
                 args.Block.NumberedListItem.RichText,
@@ -113,7 +133,28 @@ public static class Transformer
             }
 
             return $"{bulletText}\n{formattedChildren}";
-        });
+        }
+
+        return TransformerFactory.CreateNumberedListItemTransformerFactory(execute);
+
+        //return TransformerFactory.CreateNumberedListItemTransformerFactory(args =>
+        //{
+        //    string text = RichTextsToMarkdown(
+        //        args.Block.NumberedListItem.RichText,
+        //        options.EnableAnnotations,
+        //        options.ColorMap
+        //    );
+
+        //    string formattedChildren = Indent(args.Children, 3);
+        //    string bulletText = NumberedList(text, args.Index);
+
+        //    if (string.IsNullOrEmpty(args.Children))
+        //    {
+        //        return bulletText;
+        //    }
+
+        //    return $"{bulletText}\n{formattedChildren}";
+        //});
 
         //return context =>
         //{
@@ -212,9 +253,6 @@ public static class Transformer
         // コード実装
         return context => "";
     }
-
-
-
 }
 
 public class BookmarkTransformerOptions

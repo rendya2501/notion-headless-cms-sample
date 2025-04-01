@@ -1,4 +1,3 @@
-using hoge.Constants;
 using hoge.Models;
 using hoge.Utils;
 using Notion.Client;
@@ -7,10 +6,26 @@ namespace hoge.Services;
 
 public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 {
-    public async Task<List<Page>> GetPagesForPublishingAsync(string databaseId, string requestPublishingPropertyName)
+    /// <summary>
+    /// Notion のプロパティ名を定義します。
+    /// </summary>
+    private class NotionPropertyConstants
+    {
+        public const string TitlePropertyName = "Title";
+        public const string TypePropertyName = "Type";
+        public const string PublishedAtPropertyName = "PublishedAt";
+        public const string RequestPublishingPropertyName = "RequestPublishing";
+        public const string CrawledAtPropertyName = "_SystemCrawledAt";
+        public const string TagsPropertyName = "Tags";
+        public const string DescriptionPropertyName = "Description";
+        public const string SlugPropertyName = "Slug";
+    }
+
+
+    public async Task<List<Page>> GetPagesForPublishingAsync(string databaseId)
     {
         var allPages = new List<Page>();
-        var filter = new CheckboxFilter(requestPublishingPropertyName, true);
+        var filter = new CheckboxFilter(NotionPropertyConstants.RequestPublishingPropertyName, true);
         string? nextCursor = null;
 
         do
@@ -29,7 +44,7 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         return allPages;
     }
 
-    public async Task<PageData> ExtractPageDataAsync(Page page)
+    public PageData CopyPageProperties(Page page)
     {
         var pageData = new PageData { PageId = page.Id };
 
@@ -93,11 +108,6 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
             }
         }
 
-        if (page.Cover is UploadedFile coverImage)
-        {
-            pageData.CoverImageUrl = coverImage.File.Url;
-        }
-
         return pageData;
     }
 
@@ -129,11 +139,12 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         });
     }
 
-    public async Task<List<Block>> BulkDownloadPagesAsync2(string blockId)
+    public async Task<List<NotionBlock>> GetPageFullContent(string blockId)
     {
-        List<Block> results = [];
+        List<NotionBlock> results = [];
         string? nextCursor = null;
 
+        // ページの親要素を取得
         do
         {
             var pagination = await client.Blocks.RetrieveChildrenAsync(
@@ -144,58 +155,14 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
                 }
             );
 
-            results.AddRange(pagination.Results.Cast<Block>());
+            results.AddRange(pagination.Results.Cast<Block>().Select(NotionBlock.FromBlock));
             nextCursor = pagination.HasMore ? pagination.NextCursor : null;
         } while (nextCursor != null);
 
+        // ページの子要素を取得
         var tasks = results
             .Where(block => block.HasChildren)
-            .Select(async block =>
-            {
-                var children = await BulkDownloadPagesAsync2(block.Id);
-
-                switch (block)
-                {
-                    case ParagraphBlock paragraphBlock:
-                        paragraphBlock.Paragraph.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case BulletedListItemBlock bulletListItem:
-                        bulletListItem.BulletedListItem.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case NumberedListItemBlock numberedListItem:
-                        numberedListItem.NumberedListItem.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case QuoteBlock quoteBlock:
-                        quoteBlock.Quote.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case CalloutBlock calloutBlock:
-                        calloutBlock.Callout.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case TableBlock tableBlock:
-                        tableBlock.Table.Children = children.Cast<TableRowBlock>().ToList();
-                        break;
-                    case ColumnBlock columnBlock:
-                        columnBlock.Column.Children = children.Cast<IColumnChildrenBlock>().ToList();
-                        break;
-                    case ColumnListBlock columnListBlock:
-                        columnListBlock.ColumnList.Children = children.Cast<ColumnBlock>().ToList();
-                        break;
-                    case SyncedBlockBlock syncedBlockBlock:
-                        syncedBlockBlock.SyncedBlock.Children = children.Cast<ISyncedBlockChildren>().ToList();
-                        break;
-                    case TemplateBlock templateBlock:
-                        templateBlock.Template.Children = children.Cast<ITemplateChildrenBlock>().ToList();
-                        break;
-                    case ToDoBlock toDoBlock:
-                        toDoBlock.ToDo.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    case ToggleBlock toggleBlock:
-                        toggleBlock.Toggle.Children = children.Cast<INonColumnBlock>().ToList();
-                        break;
-                    default:
-                        break;
-                }
-            })
+            .Select(async block => block.Children = await GetPageFullContent(block.Id))
             .ToList();
 
         await Task.WhenAll(tasks);
@@ -222,31 +189,4 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 
         return allBlocks;
     }
-
-    //public async Task<List<Block>> GetBlocksAsync(string blockId)
-    //{
-    //    return await RetrieveAllItemsAsync(
-    //        async (parameters) => await client.Blocks.RetrieveChildrenAsync(blockId, parameters),
-    //        new BlocksRetrieveChildrenParameters()
-    //    );
-    //}
-
-    //private async Task<List<Block>> RetrieveAllItemsAsync(
-    //    Func<BlocksRetrieveChildrenParameters, Task<PaginatedList<IBlock>>> retrievalFunc,
-    //    BlocksRetrieveChildrenParameters initialParameters)
-    //{
-    //    var allItems = new List<Block>();
-    //    initialParameters.StartCursor = null;
-
-    //    do
-    //    {
-    //        var pagination = await retrievalFunc(initialParameters);
-
-    //        allItems.AddRange(pagination.Results.Cast<Block>());
-    //        initialParameters.StartCursor = pagination.HasMore ? pagination.NextCursor : null;
-
-    //    } while (initialParameters.StartCursor != null);
-
-    //    return allItems;
-    //}
 }

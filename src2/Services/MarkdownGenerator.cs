@@ -5,9 +5,9 @@ namespace hoge.Services;
 /// <summary>
 /// マークダウンを生成するクラスです。
 /// </summary>
-/// <param name="config"></param>
-/// <param name="notionClient"></param>
-public class MarkdownGenerator(IHeaderGenerator headerGenerator, IContentGenerator contentGenerator) : IMarkdownGenerator
+/// <param name="frontmatterGenerator"></param>
+/// <param name="contentGenerator"></param>
+public class MarkdownGenerator(IFrontmatterGenerator frontmatterGenerator, IContentGenerator contentGenerator) : IMarkdownGenerator
 {
     /// <summary>
     /// マークダウンを生成します。
@@ -17,9 +17,9 @@ public class MarkdownGenerator(IHeaderGenerator headerGenerator, IContentGenerat
     /// <returns></returns>
     public async Task<string> GenerateMarkdownAsync(PageData pageData, string outputDirectory)
     {
-        var header = await headerGenerator.GenerateHeaderAsync(pageData, outputDirectory);
+        var frontmatter = frontmatterGenerator.GenerateFrontmatter(pageData);
         var content = await contentGenerator.GenerateContentAsync(pageData.PageId, outputDirectory);
 
-        return $"{header}{content}";
+        return $"{frontmatter}{content}";
     }
 }

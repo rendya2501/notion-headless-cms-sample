@@ -20,7 +20,7 @@ services.AddSingleton<INotionClient>(provider =>
 
 // サービスの登録
 services.AddSingleton<INotionClientWrapper, NotionClientWrapper>();
-services.AddSingleton<IHeaderGenerator, HeaderGenerator>();
+services.AddSingleton<IFrontmatterGenerator, HeaderGenerator>();
 services.AddSingleton<IContentGenerator, ContentGenerator>();
 services.AddSingleton<IMarkdownGenerator, MarkdownGenerator>();
 services.AddSingleton<INotionExporter, NotionExporter>();

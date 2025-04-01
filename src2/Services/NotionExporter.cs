@@ -1,5 +1,4 @@
 using hoge.Configuration;
-using hoge.Constants;
 using hoge.Models;
 using Notion.Client;
 using System.Text;
@@ -13,10 +12,8 @@ public class NotionExporter(
 {
     public async Task ExportPagesAsync()
     {
-        // リクエストされた公開ページを取得
-        var pages = await notionClient.GetPagesForPublishingAsync(
-            config.NotionDatabaseId,
-            NotionPropertyConstants.RequestPublishingPropertyName);
+        // リクエストされた公開ページ一覧を取得
+        var pages = await notionClient.GetPagesForPublishingAsync(config.NotionDatabaseId);
 
         //  エクスポート日時
         var now = DateTime.Now;
@@ -53,8 +50,8 @@ public class NotionExporter(
     {
         try
         {
-            // ページデータを取得
-            var pageData = await notionClient.ExtractPageDataAsync(page);
+            // ページのプロパティを取得
+            var pageData = notionClient.CopyPageProperties(page);
 
             // ページのエクスポートが不要な場合はスキップ
             if (!ShouldExportPage(pageData, now))
