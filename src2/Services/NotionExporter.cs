@@ -33,11 +33,7 @@ public class NotionExporter(
             }
 
             // ページのプロパティを更新
-            await notionClient.UpdatePagePropertiesAsync(
-                page.Id,
-                NotionPropertyConstants.CrawledAtPropertyName,
-                NotionPropertyConstants.RequestPublishingPropertyName,
-                now);
+            await notionClient.UpdatePagePropertiesAsync(page.Id, now);
 
             //  エクスポート成功数をカウント
             exportedCount++;

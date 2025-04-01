@@ -101,24 +101,20 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         return pageData;
     }
 
-    public async Task UpdatePagePropertiesAsync(
-        string pageId,
-        string crawledAtProperty,
-        string requestPublishingProperty,
-        DateTime now)
+    public async Task UpdatePagePropertiesAsync(string pageId, DateTime now)
     {
         await client.Pages.UpdateAsync(pageId, new PagesUpdateParameters
         {
             Properties = new Dictionary<string, PropertyValue>
             {
-                [crawledAtProperty] = new DatePropertyValue
+                [NotionPropertyConstants.CrawledAtPropertyName] = new DatePropertyValue
                 {
                     Date = new Date
                     {
                         Start = now
                     }
                 },
-                [requestPublishingProperty] = new CheckboxPropertyValue
+                [NotionPropertyConstants.RequestPublishingPropertyName] = new CheckboxPropertyValue
                 {
                     Checkbox = false
                 },
@@ -161,46 +157,47 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
                 switch (block)
                 {
                     case ParagraphBlock paragraphBlock:
-                        paragraphBlock.Paragraph.Children = [.. children.Cast<INonColumnBlock>()];
+                        paragraphBlock.Paragraph.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case BulletedListItemBlock bulletListItem:
-                        bulletListItem.BulletedListItem.Children = [.. children.Cast<INonColumnBlock>()];
+                        bulletListItem.BulletedListItem.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case NumberedListItemBlock numberedListItem:
-                        numberedListItem.NumberedListItem.Children = [.. children.Cast<INonColumnBlock>()];
+                        numberedListItem.NumberedListItem.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case QuoteBlock quoteBlock:
-                        quoteBlock.Quote.Children = [.. children.Cast<INonColumnBlock>()];
+                        quoteBlock.Quote.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case CalloutBlock calloutBlock:
-                        calloutBlock.Callout.Children = [.. children.Cast<INonColumnBlock>()];
+                        calloutBlock.Callout.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case TableBlock tableBlock:
-                        tableBlock.Table.Children = [.. children.Cast<TableRowBlock>()];
+                        tableBlock.Table.Children = children.Cast<TableRowBlock>().ToList();
                         break;
                     case ColumnBlock columnBlock:
-                        columnBlock.Column.Children = [.. children.Cast<IColumnChildrenBlock>()];
+                        columnBlock.Column.Children = children.Cast<IColumnChildrenBlock>().ToList();
                         break;
                     case ColumnListBlock columnListBlock:
-                        columnListBlock.ColumnList.Children = [.. children.Cast<ColumnBlock>()];
+                        columnListBlock.ColumnList.Children = children.Cast<ColumnBlock>().ToList();
                         break;
                     case SyncedBlockBlock syncedBlockBlock:
-                        syncedBlockBlock.SyncedBlock.Children = [.. children.Cast<ISyncedBlockChildren>()];
+                        syncedBlockBlock.SyncedBlock.Children = children.Cast<ISyncedBlockChildren>().ToList();
                         break;
                     case TemplateBlock templateBlock:
-                        templateBlock.Template.Children = [.. children.Cast<ITemplateChildrenBlock>()];
+                        templateBlock.Template.Children = children.Cast<ITemplateChildrenBlock>().ToList();
                         break;
                     case ToDoBlock toDoBlock:
-                        toDoBlock.ToDo.Children = [.. children.Cast<INonColumnBlock>()];
+                        toDoBlock.ToDo.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     case ToggleBlock toggleBlock:
-                        toggleBlock.Toggle.Children = [.. children.Cast<INonColumnBlock>()];
+                        toggleBlock.Toggle.Children = children.Cast<INonColumnBlock>().ToList();
                         break;
                     default:
                         break;
                 }
             })
             .ToList();
+
         await Task.WhenAll(tasks);
 
         return results;
