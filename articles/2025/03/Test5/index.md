@@ -1,9 +1,11 @@
 ---
+type: "Idea"
 title: "Test5"
-tags: []
-date: "2025-03-24T12:15:00"
-
+description: "GGGG"
+date: "2025-03-24T21:15:00"
+eyecatch: "./9C77FEFDCEDBACC32BB1159B5B13A1BE.jpg"
 ---
+
 
 aaaaaaa
 dddddd
