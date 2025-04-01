@@ -1,9 +1,11 @@
 ---
+type: "Idea"
 title: "Test5"
-tags: []
-date: "2025-03-24T12:15:00"
-
+description: "GGGG"
+date: "2025-03-24T21:15:00"
+eyecatch: ![](./D8A884AA103CA91AB522FCDAAC79892C.png)
 ---
+
 
 aaaaaaa
 dddddd
@@ -35,12 +37,13 @@ iwr -useb get.scoop.sh | iex
 
 
 
-    ![](./D8A884AA103CA91AB522FCDAAC79892C.png)
+    
 
 
 
 ---
 
+![](./D8A884AA103CA91AB522FCDAAC79892C.png)
 
 weqweqewqw
 fghfghfghf
