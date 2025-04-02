@@ -76,7 +76,6 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
     {
         // ページのブロックを取得
         var blocks = await notionClient.GetPageFullContent(pageId);
-        // await AppendBlocksAsync2(blocks, string.Empty);
 
         var result = Execute(blocks);
 

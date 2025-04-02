@@ -149,7 +149,7 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
                 }
             );
 
-            results.AddRange(pagination.Results.Cast<Block>().Select(NotionBlock.FromBlock));
+            results.AddRange(pagination.Results.Cast<Block>().Select(s => new NotionBlock(s)));
             nextCursor = pagination.HasMore ? pagination.NextCursor : null;
         } while (nextCursor != null);
 

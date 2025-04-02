@@ -2,25 +2,23 @@ using Notion.Client;
 
 namespace hoge.Models;
 
-public class NotionBlock
+/// <summary>
+/// Notionのブロックを表します。
+/// </summary>
+/// <param name="block"></param>
+public class NotionBlock(Block block)
 {
-    public required string Id { get; set; }
-    public BlockType Type { get; private set; }
-    public bool HasChildren { get; private set; }
+    public string Id { get; set; } = block.Id;
+    public BlockType Type { get; set; } = block.Type;
+    public bool HasChildren { get; set; } = block.HasChildren;
     public List<NotionBlock> Children { get; set; } = [];
-    public required object OriginalBlock { get; set; }
+    public object OriginalBlock { get; set; } = block;
 
-    public static NotionBlock FromBlock(Block block)
-    {
-        return new NotionBlock
-        {
-            Id = block.Id,
-            Type = block.Type,
-            HasChildren = block.HasChildren,
-            OriginalBlock = block
-        };
-    }
-
+    /// <summary>
+    /// ブロックのオリジナルを取得します。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public T GetOriginalBlock<T>() where T : Block
     {
         return (T)OriginalBlock;
