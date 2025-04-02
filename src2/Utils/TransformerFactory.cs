@@ -42,7 +42,7 @@ public static class TransformerFactory
 
             return execute((
                 Block: context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>(),
-                Children: context.Execute(context.CurrentBlock.Children),
+                Children: context.TransformBlocks(context.CurrentBlock.Children),
                 Index: listCount));
         }
 

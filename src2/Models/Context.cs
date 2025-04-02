@@ -5,9 +5,28 @@ namespace hoge.Models;
 /// </summary>
 public class Context
 {
-    public Func<List<NotionBlock>, string> Execute { get; set; }
+    /// <summary>
+    /// ブロックを変換する
+    /// </summary>
+    /// <value></value>
+    public Func<List<NotionBlock>, string> TransformBlocks { get; set; }
+
+    /// <summary>
+    /// ブロックのリスト
+    /// </summary>
+    /// <value></value>
     public List<NotionBlock> Blocks { get; set; }
+
+    /// <summary>
+    /// 現在のブロック
+    /// </summary>
+    /// <value></value>
     public NotionBlock CurrentBlock { get; set; }
+
+    /// <summary>
+    /// 現在のブロックのインデックス
+    /// </summary>
+    /// <value></value>
     public int CurrentBlockIndex { get; set; }
 }
 

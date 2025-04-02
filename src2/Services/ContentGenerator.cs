@@ -86,9 +86,13 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
     {
         var context = new Context
         {
-            Execute = Execute,
+            // ブロックを変換する   
+            TransformBlocks = Execute,
+            // ブロックのリスト
             Blocks = blocks,
+            // 現在のブロック
             CurrentBlock = blocks.FirstOrDefault(),
+            // 現在のブロックのインデックス
             CurrentBlockIndex = 0
         };
 
