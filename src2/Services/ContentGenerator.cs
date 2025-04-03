@@ -50,7 +50,7 @@ public class ContentGenerator() : IContentGenerator
         var context = new Context
         {
             // ブロックを変換する処理
-            TransformBlocks = GenerateContentAsync,
+            ExecuteTransformBlocks = GenerateContentAsync,
             // ブロックのリスト
             Blocks = blocks,
             // 現在のブロック

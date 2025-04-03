@@ -9,19 +9,19 @@ public class Context
     /// ブロックを変換する
     /// </summary>
     /// <value></value>
-    public Func<List<NotionBlock>, string> TransformBlocks { get; set; }
+    public required Func<List<NotionBlock>, string> ExecuteTransformBlocks { get; set; }
 
     /// <summary>
     /// ブロックのリスト
     /// </summary>
     /// <value></value>
-    public List<NotionBlock> Blocks { get; set; }
+    public required List<NotionBlock> Blocks { get; set; }
 
     /// <summary>
     /// 現在のブロック
     /// </summary>
     /// <value></value>
-    public NotionBlock CurrentBlock { get; set; }
+    public required NotionBlock CurrentBlock { get; set; }
 
     /// <summary>
     /// 現在のブロックのインデックス
@@ -29,15 +29,3 @@ public class Context
     /// <value></value>
     public int CurrentBlockIndex { get; set; }
 }
-
-
-//// コンテキスト
-//public class Context
-//{
-//    public required Func<List<Block>, string> Execute { get; set; }
-//    public required Func<string, Task<List<Block>>> GetChildrenAsync { get; set; }
-//    public required List<Block> Blocks { get; set; }
-//    public required Block CurrentBlock { get; set; }
-//    public int CurrentBlockIndex { get; set; }
-//}
-
