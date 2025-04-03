@@ -3,23 +3,32 @@ using hoge.Models;
 namespace hoge.Services;
 
 /// <summary>
-/// マークダウンを生成するクラスです。
+/// マークダウンを生成するクラスです。  
 /// </summary>
 /// <param name="frontmatterGenerator"></param>
 /// <param name="contentGenerator"></param>
-public class MarkdownGenerator(IFrontmatterGenerator frontmatterGenerator, IContentGenerator contentGenerator) : IMarkdownGenerator
+public class MarkdownGenerator(
+    INotionClientWrapper notionClient,
+    IFrontmatterGenerator frontmatterGenerator,
+    IContentGenerator contentGenerator) : IMarkdownGenerator
 {
     /// <summary>
     /// マークダウンを生成します。
     /// </summary>
     /// <param name="pageProperty"></param>
-    /// <param name="outputDirectory"></param>
     /// <returns></returns>
-    public async Task<string> GenerateMarkdownAsync(PageProperty pageProperty, string outputDirectory)
+    public async Task<string> GenerateMarkdownAsync(PageProperty pageProperty)
     {
-        var frontmatter = frontmatterGenerator.GenerateFrontmatter(pageProperty);
-        var content = await contentGenerator.GenerateContentAsync(pageProperty.PageId, outputDirectory);
+        // ページの全内容を取得(非同期で実行)
+        var pageFullContent = notionClient.GetPageFullContent(pageProperty.PageId);
 
+        // フロントマターを作成
+        var frontmatter = frontmatterGenerator.GenerateFrontmatter(pageProperty);
+
+        // ページの全内容をマークダウンに変換
+        var content = contentGenerator.GenerateContentAsync(await pageFullContent);
+
+        // マークダウンを出力
         return $"{frontmatter}{content}";
     }
 }

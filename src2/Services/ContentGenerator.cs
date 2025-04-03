@@ -1,13 +1,17 @@
-using hoge.Configuration;
 using hoge.Models;
 using hoge.Utils;
 using Notion.Client;
-using System.Text;
 
 namespace hoge.Services;
 
-public class ContentGenerator(AppConfiguration config, INotionClientWrapper notionClient) : IContentGenerator
+/// <summary>
+/// コンテンツを生成するクラス
+/// </summary>
+public class ContentGenerator() : IContentGenerator
 {
+    /// <summary>
+    /// ブロックに対応した処理を格納したディクショナリ
+    /// </summary>
     private readonly Dictionary<Type, Func<Context, string>> transformers = new()
     {
         { typeof(BookmarkBlock), Transformer.CreateMarkdownBookmarkTransformer() },
@@ -35,59 +39,18 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
         { typeof(EmbedBlock), Transformer.CreateMarkdownEmbedTransformer() }
     };
 
-    //private readonly INotionClientWrapper notionClient;
-    //private readonly AppConfiguration config;
-
-    //public ContentGenerator(
-    //    AppConfiguration config,
-    //    INotionClientWrapper notionClient)
-    //{
-    //    this.config = config;
-    //    this.notionClient = notionClient;
-    //    //transformers = new Dictionary<Type, Func<Context, string>>
-    //    //{
-    //    //    { typeof(BookmarkBlock), Transformer.CreateMarkdownBookmarkTransformer() },
-    //    //    { typeof(BreadcrumbBlock), Transformer.CreateMarkdownBreadcrumbTransformer() },
-    //    //    { typeof(CalloutBlock), Transformer.CreateMarkdownCalloutTransformer() },
-    //    //    { typeof(CodeBlock), Transformer.CreateMarkdownCodeTransformer() },
-    //    //    { typeof(ColumnListBlock), Transformer.CreateMarkdownColumnListTransformer() },
-    //    //    { typeof(DividerBlock), Transformer.CreateMarkdownDividerTransformer() },
-    //    //    { typeof(EquationBlock), Transformer.CreateMarkdownEquationTransformer() },
-    //    //    { typeof(HeadingOneBlock), Transformer.CreateMarkdownHeadingTransformer() },
-    //    //    { typeof(HeadingTwoBlock), Transformer.CreateMarkdownHeadingTransformer() },
-    //    //    { typeof(HeadingThreeBlock), Transformer.CreateMarkdownHeadingTransformer() },
-    //    //    { typeof(LinkPreviewBlock), Transformer.CreateMarkdownLinkPreviewTransformer() },
-    //    //    { typeof(BulletedListItemBlock), Transformer.CreateMarkdownBulletedListItemTransformer() },
-    //    //    { typeof(NumberedListItemBlock), Transformer.CreateMarkdownNumberedListItemTransformer() },
-    //    //    { typeof(ToDoBlock), Transformer.CreateMarkdownTodoListItemTransformer() },
-    //    //    { typeof(ParagraphBlock), Transformer.CreateMarkdownParagraphTransformer() },
-    //    //    { typeof(QuoteBlock), Transformer.CreateMarkdownQuoteTransformer() },
-    //    //    { typeof(SyncedBlockBlock), Transformer.CreateMarkdownSyncedBlockTransformer() },
-    //    //    { typeof(TableOfContentsBlock), Transformer.CreateMarkdownTableOfContentsTransformer() },
-    //    //    { typeof(TableBlock), Transformer.CreateMarkdownTableTransformer() },
-    //    //    { typeof(ToggleBlock), Transformer.CreateMarkdownToggleTransformer() },
-    //    //    { typeof(ImageBlock), Transformer.CreateMarkdownImageTransformer() },
-    //    //    { typeof(VideoBlock), Transformer.CreateMarkdownVideoTransformer() },
-    //    //    { typeof(EmbedBlock), Transformer.CreateMarkdownEmbedTransformer() }
-    //    //};
-    //}
-
-    public async Task<StringBuilder> GenerateContentAsync(string pageId, string outputDirectory)
+    /// <summary>
+    /// コンテンツを生成します。
+    /// </summary>
+    /// <param name="blocks"></param>
+    /// <returns></returns>
+    public string GenerateContentAsync(List<NotionBlock> blocks)
     {
-        // ページのブロックを取得
-        var blocks = await notionClient.GetPageFullContent(pageId);
-
-        var result = Execute(blocks);
-
-        return new StringBuilder(result);
-    }
-
-    private string Execute(List<NotionBlock> blocks)
-    {
+        // コンテキストを作成
         var context = new Context
         {
-            // ブロックを変換する   
-            TransformBlocks = Execute,
+            // ブロックを変換する処理
+            TransformBlocks = GenerateContentAsync,
             // ブロックのリスト
             Blocks = blocks,
             // 現在のブロック
@@ -96,13 +59,17 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
             CurrentBlockIndex = 0
         };
 
+        // 変換されたブロックを格納するリスト
         var transformedBlocks = new List<string>();
 
+        // ブロックを変換   
         foreach (var (block, index) in blocks.Select((block, index) => (block, index)))
         {
+            // コンテキストを更新
             context.CurrentBlock = block;
             context.CurrentBlockIndex = index;
 
+            // ブロックを変換
             var originalBlock = block.GetOriginalBlock<Block>();
             if (transformers.TryGetValue(originalBlock.GetType(), out var transformer))
             {
@@ -111,6 +78,7 @@ public class ContentGenerator(AppConfiguration config, INotionClientWrapper noti
             }
         }
 
+        // 変換されたブロックを結合して返す
         return string.Join("\n", transformedBlocks.Where(b => !string.IsNullOrEmpty(b)));
     }
 

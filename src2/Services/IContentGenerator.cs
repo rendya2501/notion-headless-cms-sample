@@ -1,8 +1,16 @@
-using System.Text;
+using hoge.Models;
 
 namespace hoge.Services;
 
+/// <summary>
+/// コンテンツを生成するインターフェース
+/// </summary>
 public interface IContentGenerator
 {
-    Task<StringBuilder> GenerateContentAsync(string pageId, string outputDirectory);
+    /// <summary>
+    /// コンテンツを生成します。
+    /// </summary>
+    /// <param name="blocks"></param>
+    /// <returns></returns>
+    string GenerateContentAsync(List<NotionBlock> blocks);
 }

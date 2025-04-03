@@ -59,12 +59,13 @@ public class NotionExporter(
                 return false;
             }
 
-            // 出力ディレクトリを作成
+            // 出力ディレクトリを構築
             var outputDirectory = BuildOutputDirectory(pageData);
+            // 出力ディレクトリが存在しない場合は作成
             Directory.CreateDirectory(outputDirectory);
 
             // ページの Markdown を生成
-            var markdown = await markdownGenerator.GenerateMarkdownAsync(pageData, outputDirectory);
+            var markdown = await markdownGenerator.GenerateMarkdownAsync(pageData);
 
             // Markdown を出力
             await File.WriteAllTextAsync(
