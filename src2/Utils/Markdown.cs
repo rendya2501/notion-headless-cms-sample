@@ -309,12 +309,6 @@ public static class MarkdownUtils
     /// </summary>
     public static string BulletList(string text, BulletStyle style = BulletStyle.Hyphen)
     {
-        //var bullet = style switch
-        //{
-        //    BulletStyle.Hyphen => "-",
-        //    BulletStyle.Asterisk => "*",
-        //    BulletStyle.Plus => "+",
-        //};
         return $"{(char)style} {text}";
     }
 
