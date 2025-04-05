@@ -5,6 +5,12 @@ using System.Text;
 
 namespace hoge.Services;
 
+/// <summary>
+/// Notionのページをエクスポートするサービス
+/// </summary>
+/// <param name="config"></param>
+/// <param name="notionClient"></param>
+/// <param name="markdownGenerator"></param>
 public class NotionExporter(
     AppConfiguration config,
     INotionClientWrapper notionClient,
@@ -89,7 +95,7 @@ public class NotionExporter(
     /// <param name="pageProperty"></param>
     /// <param name="now"></param>
     /// <returns></returns>
-    private bool ShouldExportPage(PageProperty pageProperty, DateTime now)
+    private static bool ShouldExportPage(PageProperty pageProperty, DateTime now)
     {
         // リクエスト公開が無効な場合はスキップ
         if (!pageProperty.RequestPublishing)
@@ -140,7 +146,7 @@ public class NotionExporter(
     /// GitHub Actions の環境変数を更新します。
     /// </summary>
     /// <param name="exportedCount"></param>
-    private void UpdateGitHubEnvironment(int exportedCount)
+    private static void UpdateGitHubEnvironment(int exportedCount)
     {
         // GitHub Actions の環境変数ファイルパスを取得
         var githubEnvPath = Environment.GetEnvironmentVariable("GITHUB_ENV");

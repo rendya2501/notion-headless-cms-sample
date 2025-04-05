@@ -59,7 +59,7 @@ public static class PropertyParser
 
     public static bool TryParseAsStringList(PropertyValue value, out List<string> items)
     {
-        items = new List<string>();
+        items = [];
 
         if (value is MultiSelectPropertyValue multiSelectProperty)
         {

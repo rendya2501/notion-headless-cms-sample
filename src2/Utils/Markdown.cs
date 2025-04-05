@@ -66,6 +66,16 @@ public enum BulletStyle
 }
 
 /// <summary>
+/// 水平線スタイル
+/// </summary>
+public enum HolizontalRuleStyle
+{
+    Hyphen,
+    Asterisk,
+    Underscor
+}
+
+/// <summary>
 /// テーブルセル
 /// </summary>
 public class TableCell
@@ -354,7 +364,7 @@ public static class MarkdownUtils
     /// </summary>
     public static string CodeBlock(string code, string? language = null)
     {
-        return $"```{language ?? ""}\n{code}\n```";
+        return $"``` {language ?? string.Empty}\n{code}\n```";
     }
 
     /// <summary>
@@ -431,23 +441,24 @@ public static class MarkdownUtils
     /// <summary>
     /// 水平線変換
     /// </summary>
-    public static string HorizontalRule(string style = "hyphen")
+    public static string HorizontalRule(HolizontalRuleStyle? style = HolizontalRuleStyle.Hyphen)
     {
         return style switch
         {
-            "asterisk" => "***",
-            "underscore" => "___",
+            HolizontalRuleStyle.Hyphen => "---",
+            HolizontalRuleStyle.Asterisk => "***",
+            HolizontalRuleStyle.Underscor => "___",
             _ => "---"
         };
     }
 
-    /// <summary>
-    /// 文字列を改行で囲む
-    /// </summary>
-    public static string WrapWithNewLines(string text)
-    {
-        return $"\n{text}\n";
-    }
+    ///// <summary>
+    ///// 文字列を改行で囲む
+    ///// </summary>
+    //public static string WrapWithNewLines(string text)
+    //{
+    //    return $"\n{text}\n";
+    //}
 
     /// <summary>
     /// 文字列の各行にインデントを追加
@@ -455,7 +466,7 @@ public static class MarkdownUtils
     public static string Indent(string text, int spaces = 2)
     {
         var lines = text.Split('\n');
-        return string.Join("\n", lines.Select(line => line == "" ? line : $"{new string(' ', spaces)}{line}"));
+        return string.Join("\n", lines.Select(line => string.IsNullOrEmpty(line) ? line : $"{new string(' ', spaces)}{line}"));
     }
 
     /// <summary>
@@ -470,7 +481,7 @@ public static class MarkdownUtils
             "<summary>",
             title,
             "</summary>",
-            "", // 改行
+            string.Empty, // 改行
             content,
             "</details>",
         };
@@ -562,6 +573,6 @@ public static class MarkdownUtils
             return markdown;
         }
 
-        return string.Join(string.Empty, richTexts.Select(text => ToMarkdown(text, enableAnnotations))).Trim();
+        return string.Join(string.Empty, richTexts.Select(text => ToMarkdown(text, enableAnnotations)));
     }
 }

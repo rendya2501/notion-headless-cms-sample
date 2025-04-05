@@ -4,6 +4,9 @@ using Notion.Client;
 
 namespace hoge.Services;
 
+/// <summary>
+/// Notionのクライアントラッパー
+/// </summary>
 public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 {
     private const string TitlePropertyName = "Title";
@@ -15,7 +18,11 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
     private const string DescriptionPropertyName = "Description";
     private const string SlugPropertyName = "Slug";
 
-
+    /// <summary>
+    /// 公開用ページを取得します。
+    /// </summary>
+    /// <param name="databaseId"></param>
+    /// <returns></returns>
     public async Task<List<Page>> GetPagesForPublishingAsync(string databaseId)
     {
         var allPages = new List<Page>();
@@ -38,6 +45,11 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         return allPages;
     }
 
+    /// <summary>
+    /// ページのプロパティをコピーします。
+    /// </summary>
+    /// <param name="page"></param>
+    /// <returns></returns>
     public PageProperty CopyPageProperties(Page page)
     {
         var pageProperty = new PageProperty { PageId = page.Id };
@@ -105,6 +117,12 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         return pageProperty;
     }
 
+    /// <summary>
+    /// ページのプロパティを更新します。
+    /// </summary>
+    /// <param name="pageId"></param>
+    /// <param name="now"></param>
+    /// <returns></returns>
     public async Task UpdatePagePropertiesAsync(string pageId, DateTime now)
     {
         await client.Pages.UpdateAsync(pageId, new PagesUpdateParameters
@@ -133,14 +151,22 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         });
     }
 
+    /// <summary>
+    /// ページの全内容を取得します。
+    /// </summary>
+    /// <param name="blockId"></param>
+    /// <returns></returns>
     public async Task<List<NotionBlock>> GetPageFullContent(string blockId)
     {
+        // ページの全内容を取得するためのリスト
         List<NotionBlock> results = [];
+        // 次のカーソル
         string? nextCursor = null;
 
         // ページの親要素を取得
         do
         {
+            // ページの親要素を取得
             var pagination = await client.Blocks.RetrieveChildrenAsync(
                 blockId,
                 new BlocksRetrieveChildrenParameters
@@ -148,8 +174,9 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
                     StartCursor = nextCursor
                 }
             );
-
+            // ページの親要素を追加
             results.AddRange(pagination.Results.Cast<Block>().Select(s => new NotionBlock(s)));
+            // 次のカーソルを更新
             nextCursor = pagination.HasMore ? pagination.NextCursor : null;
         } while (nextCursor != null);
 
@@ -160,27 +187,6 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
             .ToList();
 
         await Task.WhenAll(tasks);
-
         return results;
-    }
-
-    public async Task<List<Block>> GetBlocksAsync(string blockId)
-    {
-        var allBlocks = new List<Block>();
-        string? nextCursor = null;
-
-        do
-        {
-            var pagination = await client.Blocks.RetrieveChildrenAsync(blockId, new BlocksRetrieveChildrenParameters
-            {
-                StartCursor = nextCursor
-            });
-
-            allBlocks.AddRange(pagination.Results.Cast<Block>());
-            nextCursor = pagination.HasMore ? pagination.NextCursor : null;
-
-        } while (nextCursor != null);
-
-        return allBlocks;
     }
 }

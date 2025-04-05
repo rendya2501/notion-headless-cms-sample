@@ -6,136 +6,355 @@ namespace hoge.Utils;
 
 public static class Transformer
 {
-    public static Func<Context, string> CreateMarkdownBookmarkTransformer(
-        BookmarkTransformerOptions? options = null)
+    /// <summary>
+    /// ブックマークブロックをMarkdown形式に変換する
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownBookmarkTransformer()
     {
-        options ??= new BookmarkTransformerOptions();
-
-        string execute(BookmarkBlock block)
+        static string execute(Context context)
         {
-            string caption = RichTextsToMarkdown(
-                block.Bookmark.Caption,
-                options.EnableAnnotations,
-                options.ColorMap
-            );
+            // 現在のブロックをブックマークブロックに変換
+            var originalBlock = context.CurrentBlock.GetOriginalBlock<Block>();
+            // ブックマークブロックが存在しない場合は空文字を返す
+            if (originalBlock is not BookmarkBlock bookmarkBlock || string.IsNullOrEmpty(bookmarkBlock.Bookmark.Url))
+            {
+                return string.Empty;
+            }
+
+            // ブックマークのキャプションをMarkdown形式に変換
+            string caption = RichTextsToMarkdown(bookmarkBlock.Bookmark.Caption);
             // ブックマークのキャプションが空の場合はURLを表示する
             string text = !string.IsNullOrEmpty(caption)
                 ? caption
-                : block.Bookmark.Url;
-            return Link(text, block.Bookmark.Url);
+                : bookmarkBlock.Bookmark.Url;
+            // ブックマークのキャプションが空の場合はURLを表示する
+            return Link(text, bookmarkBlock.Bookmark.Url);
         }
+        return execute;
 
-        return TransformerFactory.CreateBookmarkTransformerFactory(execute);
+        //string execute(BookmarkBlock block)
+        //{
+        //    // ブックマークのキャプションをMarkdown形式に変換
+        //    string caption = RichTextsToMarkdown(
+        //        block.Bookmark.Caption,
+        //        options.EnableAnnotations,
+        //        options.ColorMap
+        //    );
+        //    // ブックマークのキャプションが空の場合はURLを表示する
+        //    string text = !string.IsNullOrEmpty(caption)
+        //        ? caption
+        //        : block.Bookmark.Url;
+        //    return Link(text, block.Bookmark.Url);
+        //}
 
-        return TransformerFactory.CreateBookmarkTransformerFactory(block =>
-        {
-            string caption = RichTextsToMarkdown(
-                block.Bookmark.Caption,
-                options.EnableAnnotations,
-                options.ColorMap
-            );
-            var text = string.IsNullOrEmpty(caption)
-                ? block.Bookmark.Url
-                : caption;
-            return Link(text, block.Bookmark.Url);
-        });
-
-        //    return context =>
+        //string createTransformer(Context context)
+        //{
+        //    var originalBlock = context.CurrentBlock.GetOriginalBlock<Block>();
+        //    if (originalBlock is not BookmarkBlock bookmarkBlock || string.IsNullOrEmpty(bookmarkBlock.Bookmark.Url))
         //    {
-        //        var block = context.CurrentBlock as BookmarkBlock;
-        //        var caption = MarkdownUtils.RichTextsToMarkdown(block.Bookmark.Caption);
-        //        return MarkdownUtils.Link(string.IsNullOrEmpty(caption) ? block.Bookmark.Url : caption, block.Bookmark.Url);
+        //        return string.Empty;
+        //    }
+        //    return execute(bookmarkBlock);
+        //}
 
-        //        //var block = context.CurrentBlock as BookmarkBlock;
-        //        //var caption = block.Bookmark.Caption.FirstOrDefault()?.PlainText;
-        //        //var url = block.Bookmark.Url;
-
-        //        //if (string.IsNullOrWhiteSpace(caption))
-        //        //{
-        //        //    return string.Empty;
-        //        //}
-
-        //        //return $"[{caption}]({url})";
-        //    };
+        //return createTransformer;
     }
 
+
+    /// <summary>
+    /// ブラウザブロックをMarkdown形式に変換する
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownBreadcrumbTransformer()
     {
-        return context => string.Empty;
-    }
-
-    public static Func<Context, string> CreateMarkdownBulletedListItemTransformer(NumberedListItemTransformerOptions? options = null)
-    {
-
         return Context => "";
     }
 
-    public static Func<Context, string> CreateMarkdownCalloutTransformer()
+
+    /// <summary>
+    /// バレットリスト変換
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownBulletedListItemTransformer()
     {
-        return Context => "";
+        static string execute(Context context)
+        {
+            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
+
+            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>().BulletedListItem.RichText);
+            var formattedChildren = Indent(children);
+            var bulletText = BulletList(text);
+
+            if (string.IsNullOrEmpty(children))
+            {
+                return bulletText;
+            }
+
+            return $"{bulletText}{Environment.NewLine}{formattedChildren}";
+        }
+        return execute;
     }
-    // 他のトランスフォーマーは同様に実装します...
+
+
+    /// <summary>
+    /// コードブロック変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownCodeTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
+            var lang = context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.Language;
+            return CodeBlock(text, lang);
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// カラムリスト変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownColumnListTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var columns = context.CurrentBlock.Children;
+            var columnsText = columns.Select(column => context.ExecuteTransformBlocks(column.Children));
+
+            return string.Join("\n", columnsText);
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// コールアウトブロックをMarkdown形式に変換する
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownCalloutTransformer()
+    {
+        //    foreach (var richText in calloutBlock.Callout.RichText)
+        //    {
+        //        var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+        //        foreach (var line in lines)
+        //        {
+        //            sb.Append($"{indent}> ");
+        //            var tempRichText = new RichTextBase
+        //            {
+        //                PlainText = line,
+        //                Annotations = richText.Annotations,
+        //                Href = richText.Href
+        //            };
+        //            AppendRichText(tempRichText);
+        //            if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+        //            sb.AppendLine();
+        //        }
+        //    }
+        static string execute(Context context)
+        {
+            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
+            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
+
+            return Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
+        }
+        return execute;
+    }
+
+
+    /// <summary>
+    /// 水平線変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownDividerTransformer()
     {
-        // コード実装
-        return context => "";
+        // static string execute(Context context)
+        // {
+        //     return WrapWithNewLines(HorizontalRule());
+        // }
+        return context => HorizontalRule();
     }
 
+
+    /// <summary>
+    /// 埋め込み変換
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownEmbedTransformer()
+    {
+        static string execute(Context context)
+        {
+            // var captionMetadata = FromRichText(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
+            // if (enableEmbed && supportedEmbedProviders)
+            // {
+            //     var result = ProviderUtils.embedByUrl(block.embed.url, captionMetadata, {
+            //         supportedEmbedProviders,
+            //     });
+            //     if (result)
+            //     {
+            //         return result;
+            //     }
+            // }
+
+            var caption = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
+            var url = context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Url;
+            return Link(caption ?? url, url);
+        }
+        return execute;
+    }
+
+
+    /// <summary>
+    /// 数式変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownEquationTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var text = context.CurrentBlock.GetOriginalBlock<EquationBlock>().Equation.Expression;
+            return context.CurrentBlock.GetOriginalBlock<EquationBlock>().Type == BlockType.Code
+                    ? CodeBlock(text, "txt")
+                    : BlockEquation(text);
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// ファイル変換
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownFileTransformer()
+    {
+        static string execute(Context context)
+        {
+            // var captionMetadata = CaptionMetadata.fromRichText(context.CurrentBlock.GetOriginalBlock<FileBlock>().File.Caption);
+            var fileBlock = context.CurrentBlock.GetOriginalBlock<FileBlock>().File;
+            // var { url } = fileAdapter(block.file);
+            // var caption = fileBlock.Caption.Any()
+            //     ? RichTextsToMarkdown(fileBlock.Caption)
+            //     : fileBlock.Name;
+            // return Link(caption, fileBlock.);
+            return RichTextsToMarkdown(fileBlock.Caption);
+        }
+        return execute;
+    }
+
+
+    /// <summary>
+    /// 見出し変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownHeadingTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var block = context.CurrentBlock.GetOriginalBlock<Block>();
+            var (text, level) = block switch
+            {
+                HeadingOneBlock headingOneBlock => (RichTextsToMarkdown(headingOneBlock.Heading_1.RichText), 1),
+                HeadingTwoBlock headingTwoBlock => (RichTextsToMarkdown(headingTwoBlock.Heading_2.RichText), 2),
+                HeadingThreeBlock headingThreeBlock => (RichTextsToMarkdown(headingThreeBlock.Heading_3.RichText), 3),
+                _ => (string.Empty, 1),
+            };
+
+            return Heading(text, level);
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// リンクプレビュー変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownLinkPreviewTransformer()
     {
-        // コード実装
+
         return context => "";
     }
 
-    public static Func<Context, string> CreateMarkdownNumberedListItemTransformer(
-        NumberedListItemTransformerOptions? options = null)
+
+    /// <summary>
+    /// 番号付きリスト変換
+    /// </summary>
+    /// <returns></returns>
+    public static Func<Context, string> CreateMarkdownNumberedListItemTransformer()
     {
-        options ??= new NumberedListItemTransformerOptions();
-
-        string execute((NumberedListItemBlock Block, string Children, int Index) args)
+        static string execute(Context context)
         {
-            string text = RichTextsToMarkdown(
-                args.Block.NumberedListItem.RichText,
-                options.EnableAnnotations,
-                options.ColorMap
-            );
+            // 現在のブロックの前にあるブロックを取得
+            var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
+            // NumberedListItemBlockではないブロックが出てくるまでカウント
+            // そのカウント数がリストのインデックスとなる
+            var listCount = 1;
+            for (var index = beforeBlocks.Count - 1; index >= 0; index--)
+            {
+                if (beforeBlocks[index].OriginalBlock is not NumberedListItemBlock)
+                {
+                    break;
+                }
+                listCount++;
+            }
 
-            string formattedChildren = Indent(args.Children, 3);
-            string bulletText = NumberedList(text, args.Index);
+            var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
+            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
 
-            if (string.IsNullOrEmpty(args.Children))
+            string text = RichTextsToMarkdown(block.NumberedListItem.RichText);
+            string formattedChildren = Indent(children, 3);
+            string bulletText = NumberedList(text, listCount);
+
+            if (string.IsNullOrEmpty(children))
             {
                 return bulletText;
             }
 
             return $"{bulletText}\n{formattedChildren}";
         }
+        return execute;
 
-        return TransformerFactory.CreateNumberedListItemTransformerFactory(execute);
+        // string execute((NumberedListItemBlock Block, string Children, int Index) args)
+        // {
+        //     string text = RichTextsToMarkdown(args.Block.NumberedListItem.RichText);
+        //     string formattedChildren = Indent(args.Children, 3);
+        //     string bulletText = NumberedList(text, args.Index);
+
+        //     if (string.IsNullOrEmpty(args.Children))
+        //     {
+        //         return bulletText;
+        //     }
+
+        //     return $"{bulletText}\n{formattedChildren}";
+        // }
+
+        // string createTransfomer(Context context)
+        // {
+        //     // 現在のブロックの前にあるブロックを取得
+        //     var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
+        //     // NumberedListItemBlockではないブロックが出てくるまでカウント
+        //     // そのカウント数がリストのインデックスとなる
+        //     var listCount = 1;
+        //     for (var index = beforeBlocks.Count - 1; index >= 0; index--)
+        //     {
+        //         if (beforeBlocks[index].OriginalBlock is not NumberedListItemBlock)
+        //         {
+        //             break;
+        //         }
+        //         listCount++;
+        //     }
+
+        //     return execute((
+        //         Block: context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>(),
+        //         Children: context.ExecuteTransformBlocks(context.CurrentBlock.Children),
+        //         Index: listCount));
+        // }
+
+        // return createTransfomer;
+
+
 
         //return TransformerFactory.CreateNumberedListItemTransformerFactory(args =>
         //{
@@ -155,114 +374,163 @@ public static class Transformer
 
         //    return $"{bulletText}\n{formattedChildren}";
         //});
-
-        //return context =>
-        //{
-        //    var block = context.CurrentBlock as BulletedListItemBlock;
-        //    var text = block.BulletedListItem.RichText;
-
-        //    // 子ブロックの処理
-        //    var children = string.Empty;
-        //    if (block.HasChildren)
-        //    {
-        //        var childBlocks = notionClient.GetBlocksAsync(block.Id).Result;
-        //        children = context.Execute(childBlocks);
-        //        //children = context.Execute(block.BulletedListItem.Children);
-        //    }
-
-        //    var formattedChildren = $"  {children}";
-        //    var bulletText = $"- {text}";
-
-        //    if (string.IsNullOrEmpty(children))
-        //    {
-        //        return bulletText;
-        //    }
-
-        //    return $"{bulletText}\n{formattedChildren}";
-        //};
     }
 
+
+    /// <summary>
+    /// 段落変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownParagraphTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var children = context.CurrentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+                : string.Empty;
+
+            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText);
+            var convertedMarkdown = string.IsNullOrEmpty(children)
+                ? text
+                : $"{text}{Environment.NewLine}{children}";
+            return convertedMarkdown;
+        }
+
+        return execute;
     }
 
+
+    /// <summary>
+    /// 引用変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownQuoteTransformer()
     {
-        // コード実装
-        return context => "";
+        //    foreach (var richText in quoteBlock.Quote.RichText)
+        //    {
+        //        var lines = richText.PlainText.Split([Environment.NewLine, "\n"], StringSplitOptions.None);
+        //        foreach (var line in lines)
+        //        {
+        //            sb.Append($"{indent}> ");
+        //            var tempRichText = new RichTextBase
+        //            {
+        //                PlainText = line,
+        //                Annotations = richText.Annotations,
+        //                Href = richText.Href
+        //            };
+        //            AppendRichText(tempRichText);
+        //            if (!string.IsNullOrWhiteSpace(tempRichText.PlainText)) sb.Append("  ");
+        //            sb.AppendLine();
+        //        }
+        //    }
+
+        static string execute(Context context)
+        {
+            var children = context.CurrentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+                : string.Empty;
+            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText);
+
+            return Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// 同期ブロック変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownSyncedBlockTransformer()
     {
-        // コード実装
         return context => "";
     }
 
+
+    /// <summary>
+    /// 目次変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownTableOfContentsTransformer()
     {
-        // コード実装
         return context => "";
     }
 
+
+    /// <summary>
+    /// テーブル変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownTableTransformer()
     {
-        // コード実装
         return context => "";
     }
 
+
+    /// <summary>
+    /// タスクリスト変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownTodoListItemTransformer()
     {
-        // コード実装
         return context => "";
     }
 
+
+    /// <summary>
+    /// トグル変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownToggleTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
+            var title = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
+            return Details(title, children);
+        }
+        return execute;
     }
 
-    public static Func<Context, string> CreateMarkdownFileTransformer()
-    {
-        // コード実装
-        return context => "";
-    }
 
+    /// <summary>
+    /// 画像変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownImageTransformer()
     {
-        // コード実装
-        return context => "";
+        static string execute(Context context)
+        {
+            var block = context.CurrentBlock.GetOriginalBlock<ImageBlock>();
+            var url = block.Image switch
+            {
+                ExternalFile externalFile => externalFile.External.Url,
+                UploadedFile uploadedFile => uploadedFile.File.Url,
+                _ => string.Empty
+            };
+            var title = RichTextsToMarkdown(block.Image.Caption);
+            return Image(title, url);
+        }
+        return execute;
     }
 
+
+    /// <summary>
+    /// PDF変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownPDFTransformer()
     {
-        // コード実装
         return context => "";
     }
 
+
+    /// <summary>
+    /// ビデオ変換
+    /// </summary>
+    /// <returns></returns>
     public static Func<Context, string> CreateMarkdownVideoTransformer()
     {
-        // コード実装
         return context => "";
     }
-
-    public static Func<Context, string> CreateMarkdownEmbedTransformer()
-    {
-        // コード実装
-        return context => "";
-    }
-}
-
-public class BookmarkTransformerOptions
-{
-    public EnableAnnotations? EnableAnnotations { get; set; }
-    public ColorMap? ColorMap { get; set; }
-}
-
-public class NumberedListItemTransformerOptions
-{
-    public EnableAnnotations EnableAnnotations { get; set; }
-    public ColorMap ColorMap { get; set; }
 }

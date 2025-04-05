@@ -79,7 +79,7 @@ public class ContentGenerator() : IContentGenerator
         }
 
         // 変換されたブロックを結合して返す
-        return string.Join("\n", transformedBlocks.Where(b => !string.IsNullOrEmpty(b)));
+        return string.Join("\n", transformedBlocks.Where(b => b is not null));
     }
 
     ///// <summary>
