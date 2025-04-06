@@ -1,50 +1,63 @@
 using hoge.Configuration;
 using hoge.Models;
+using Microsoft.Extensions.Logging;
 using Notion.Client;
 using System.Text;
-using hoge.Utils;
 
 namespace hoge.Services;
 
 /// <summary>
 /// Notionのページをエクスポートするサービス
 /// </summary>
-/// <param name="config"></param>
-/// <param name="notionClient"></param>
-/// <param name="markdownGenerator"></param>
 public class NotionExporter(
-    AppConfiguration config,
-    INotionClientWrapper notionClient,
-    IMarkdownGenerator markdownGenerator) : INotionExporter
+    AppConfiguration _config,
+    INotionClientWrapper _notionClient,
+    IMarkdownGenerator _markdownGenerator,
+    IImageProcessor _imageProcessor,
+    ILogger<NotionExporter> _logger) : INotionExporter
 {
+    /// <summary>
+    /// Notionのページをエクスポートします。
+    /// </summary>
+    /// <returns></returns>
     public async Task ExportPagesAsync()
     {
-        // リクエストされた公開ページ一覧を取得
-        var pages = await notionClient.GetPagesForPublishingAsync(config.NotionDatabaseId);
-
-        //  エクスポート日時
-        var now = DateTime.Now;
-        // エクスポート成功数
-        var exportedCount = 0;
-
-        // ページごとにエクスポート
-        foreach (var page in pages)
+        try
         {
-            // ページのエクスポートに失敗した場合は次のページに進む
-            if (!await ExportPageAsync(page, now))
+            // 公開可能なページを取得
+            var pages = await _notionClient.GetPagesForPublishingAsync(_config.NotionDatabaseId);
+            // 現在の日時
+            var now = DateTime.Now;
+            // エクスポート成功数
+            var exportedCount = 0;
+
+            foreach (var page in pages)
             {
-                continue;
+                try
+                {
+                    // ページをエクスポート
+                    if (await ExportPageAsync(page, now))
+                    {
+                        // ページのプロパティを更新
+                        await _notionClient.UpdatePagePropertiesAsync(page.Id, now);
+                        // エクスポート成功数をインクリメント
+                        exportedCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to export page {PageId}", page.Id);
+                }
             }
 
-            // ページのプロパティを更新
-            await notionClient.UpdatePagePropertiesAsync(page.Id, now);
-
-            //  エクスポート成功数をカウント
-            exportedCount++;
+            // GitHub Actions の環境変数を更新
+            UpdateGitHubEnvironment(exportedCount);
         }
-
-        // GitHub Actions の環境変数を更新
-        UpdateGitHubEnvironment(exportedCount);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export pages");
+            throw;
+        }
     }
 
     /// <summary>
@@ -56,11 +69,11 @@ public class NotionExporter(
     private async Task<bool> ExportPageAsync(Page page, DateTime now)
     {
         try
-        {
-            // ページのプロパティを取得
-            var pageData = notionClient.CopyPageProperties(page);
+        {       
+            // ページのプロパティをコピー
+            var pageData = _notionClient.CopyPageProperties(page);
 
-            // ページのエクスポートが不要な場合はスキップ
+            // ページをエクスポートするかどうかを判定
             if (!ShouldExportPage(pageData, now))
             {
                 return false;
@@ -68,27 +81,26 @@ public class NotionExporter(
 
             // 出力ディレクトリを構築
             var outputDirectory = BuildOutputDirectory(pageData);
-            // 出力ディレクトリが存在しない場合は作成
             Directory.CreateDirectory(outputDirectory);
 
-            // ページの Markdown を生成
-            var markdown = await markdownGenerator.GenerateMarkdownAsync(pageData);
-            
-            // 画像をダウンロードし、マークダウンのパスを更新
-            markdown = await ImageDownloader.ProcessMarkdownImagesAsync(markdown, outputDirectory);
-
-            // Markdown を出力
+            // マークダウンを生成
+            var markdown = await _markdownGenerator.GenerateMarkdownAsync(pageData);
+            // マークダウン内の画像URLを置換
+            markdown = await _imageProcessor.ProcessMarkdownImagesAsync(markdown, outputDirectory);
+            // マークダウンを出力
             await File.WriteAllTextAsync(
                 Path.Combine(outputDirectory, "index.md"),
                 markdown,
                 new UTF8Encoding(false));
 
+            _logger.LogInformation("Successfully exported page {PageId} to {OutputDirectory}",
+                page.Id, outputDirectory);
+
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error exporting page {page.Id}: {ex.Message}");
-            // 詳細なログ記録や監視システムへの通知をここに追加
+            _logger.LogError(ex, "Failed to export page {PageId}", page.Id);
             return false;
         }
     }
@@ -99,26 +111,29 @@ public class NotionExporter(
     /// <param name="pageProperty"></param>
     /// <param name="now"></param>
     /// <returns></returns>
-    private static bool ShouldExportPage(PageProperty pageProperty, DateTime now)
+    private bool ShouldExportPage(PageProperty pageProperty, DateTime now)
     {
         // リクエスト公開が無効な場合はスキップ
         if (!pageProperty.RequestPublishing)
         {
-            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): No request publishing.");
+            _logger.LogInformation("Skipping page {PageId} (title = {Title}): No request publishing.",
+                pageProperty.PageId, pageProperty.Title);
             return false;
         }
 
         // 公開日時が未設定の場合はスキップ
         if (!pageProperty.PublishedDateTime.HasValue)
         {
-            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): Missing publish date.");
+            _logger.LogInformation("Skipping page {PageId} (title = {Title}): Missing publish date.",
+                pageProperty.PageId, pageProperty.Title);
             return false;
         }
 
         // 公開日時が未来の場合はスキップ
         if (now < pageProperty.PublishedDateTime.Value)
         {
-            Console.WriteLine($"{pageProperty.PageId}(title = {pageProperty.Title}): Publication date not reached.");
+            _logger.LogInformation("Skipping page {PageId} (title = {Title}): Publication date not reached.",
+                pageProperty.PageId, pageProperty.Title);
             return false;
         }
 
@@ -132,11 +147,12 @@ public class NotionExporter(
     /// <returns></returns>
     private string BuildOutputDirectory(PageProperty pageProperty)
     {
-        // 出力ディレクトリパスのテンプレートをパース
-        var template = Scriban.Template.Parse(config.OutputDirectoryPathTemplate);
-        // スラッグが設定されている場合はそれを使用、未設定の場合はタイトルを使用
-        var slug = !string.IsNullOrEmpty(pageProperty.Slug) ? pageProperty.Slug : pageProperty.Title;
-
+        // 出力ディレクトリのパスをテンプレートから生成
+        var template = Scriban.Template.Parse(_config.OutputDirectoryPathTemplate);
+        // スラグが設定されていない場合はタイトルを使用
+        var slug = !string.IsNullOrEmpty(pageProperty.Slug)
+            ? pageProperty.Slug
+            : pageProperty.Title;
         // 出力ディレクトリパスをレンダリング
         return template.Render(new
         {
@@ -150,7 +166,7 @@ public class NotionExporter(
     /// GitHub Actions の環境変数を更新します。
     /// </summary>
     /// <param name="exportedCount"></param>
-    private static void UpdateGitHubEnvironment(int exportedCount)
+    private void UpdateGitHubEnvironment(int exportedCount)
     {
         // GitHub Actions の環境変数ファイルパスを取得
         var githubEnvPath = Environment.GetEnvironmentVariable("GITHUB_ENV");
@@ -158,13 +174,13 @@ public class NotionExporter(
         // 環境変数が設定されていない場合は警告を出力
         if (string.IsNullOrEmpty(githubEnvPath))
         {
-            Console.WriteLine("Warning: GITHUB_ENV not set, skipping environment update.");
+            _logger.LogWarning("GITHUB_ENV not set, skipping environment update.");
             return;
         }
 
         // エクスポート成功数を環境変数に追記
         var exportCountLine = $"EXPORTED_COUNT={exportedCount}";
         File.AppendAllText(githubEnvPath, exportCountLine + Environment.NewLine);
-        Console.WriteLine(exportCountLine);
+        _logger.LogInformation("{exportCountLine}", exportCountLine);
     }
 }

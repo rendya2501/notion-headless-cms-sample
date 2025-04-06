@@ -1,11 +1,20 @@
 // Program.cs - エントリポイント
 using hoge.Configuration;
 using hoge.Services;
+using hoge.Utils;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Notion.Client;
 
 // DIコンテナの設定
 var services = new ServiceCollection();
+
+// ロギングの設定
+services.AddLogging(builder =>
+{
+    builder.AddConsole();
+    builder.SetMinimumLevel(LogLevel.Information);
+});
 
 // コマンドライン引数から設定を取得
 var config = AppConfiguration.FromCommandLine(args);
@@ -23,6 +32,15 @@ services.AddSingleton<INotionClientWrapper, NotionClientWrapper>();
 services.AddSingleton<IFrontmatterGenerator, FrontmatterGenerator>();
 services.AddSingleton<IContentGenerator, ContentGenerator>();
 services.AddSingleton<IMarkdownGenerator, MarkdownGenerator>();
+services.Configure<ImageDownloaderOptions>(options =>
+{
+    options.MaxRetryCount = 3;
+    options.RetryDelayMilliseconds = 1000;
+    options.MaxConcurrentDownloads = 4;
+    options.TimeoutSeconds = 30;
+    options.SkipExistingFiles = true;
+});
+services.AddSingleton<IImageProcessor, ImageProcessor>();
 services.AddSingleton<INotionExporter, NotionExporter>();
 
 // サービスプロバイダーの構築

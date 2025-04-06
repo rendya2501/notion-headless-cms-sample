@@ -1,6 +1,5 @@
 using hoge.Models;
 using Notion.Client;
-using static hoge.Utils.MarkdownUtils;
 
 namespace hoge.Utils;
 
@@ -23,13 +22,13 @@ public static class Transformer
             }
 
             // ブックマークのキャプションをMarkdown形式に変換
-            string caption = RichTextsToMarkdown(bookmarkBlock.Bookmark.Caption);
+            string caption = MarkdownUtils.RichTextsToMarkdown(bookmarkBlock.Bookmark.Caption);
             // ブックマークのキャプションが空の場合はURLを表示する
             string text = !string.IsNullOrEmpty(caption)
                 ? caption
                 : bookmarkBlock.Bookmark.Url;
             // ブックマークのキャプションが空の場合はURLを表示する
-            return Link(text, bookmarkBlock.Bookmark.Url);
+            return MarkdownUtils.Link(text, bookmarkBlock.Bookmark.Url);
         }
         return execute;
 
@@ -100,12 +99,12 @@ public static class Transformer
         static string execute(Context context)
         {
             var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
-            var text = RichTextsToMarkdown(block.BulletedListItem.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText);
 
             // テキストに改行が含まれている場合、2行目以降にインデントを適用
             var lines = text.Split('\n');
             var formattedText = lines.Length > 1
-                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => Indent(line)))}"
+                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => MarkdownUtils.Indent(line)))}"
                 : text;
 
             var children = context.CurrentBlock.HasChildren
@@ -113,8 +112,8 @@ public static class Transformer
                 : string.Empty;
 
             return string.IsNullOrEmpty(children)
-                ? BulletList(formattedText)
-                : $"{BulletList(formattedText)}\n{Indent(children)}";
+                ? MarkdownUtils.BulletList(formattedText)
+                : $"{MarkdownUtils.BulletList(formattedText)}\n{MarkdownUtils.Indent(children)}";
         }
         return execute;
 
@@ -130,9 +129,9 @@ public static class Transformer
     {
         static string execute(Context context)
         {
-            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
             var lang = context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.Language;
-            return CodeBlock(text, lang);
+            return MarkdownUtils.CodeBlock(text, lang);
         }
         return execute;
     }
@@ -181,9 +180,9 @@ public static class Transformer
         static string execute(Context context)
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
-            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
             var result = string.IsNullOrEmpty(children) ? text : $"{text}\n{children}";
-            return Blockquote(result);
+            return MarkdownUtils.Blockquote(result);
         }
         return execute;
     }
@@ -199,7 +198,7 @@ public static class Transformer
         // {
         //     return WrapWithNewLines(HorizontalRule());
         // }
-        return context => HorizontalRule();
+        return context => MarkdownUtils.HorizontalRule();
     }
 
 
@@ -223,9 +222,9 @@ public static class Transformer
             //     }
             // }
 
-            var caption = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
+            var caption = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
             var url = context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Url;
-            return Link(caption ?? url, url);
+            return MarkdownUtils.Link(caption ?? url, url);
         }
         return execute;
     }
@@ -242,8 +241,8 @@ public static class Transformer
             var block = context.CurrentBlock.GetOriginalBlock<EquationBlock>();
             var text = block.Equation.Expression;
             var result = block.Type == BlockType.Code
-                ? CodeBlock(text, "txt")
-                : BlockEquation(text);
+                ? MarkdownUtils.CodeBlock(text, "txt")
+                : MarkdownUtils.BlockEquation(text);
             return result;
         }
         return execute;
@@ -265,7 +264,7 @@ public static class Transformer
             //     ? RichTextsToMarkdown(fileBlock.Caption)
             //     : fileBlock.Name;
             // return Link(caption, fileBlock.);
-            return RichTextsToMarkdown(fileBlock.Caption);
+            return MarkdownUtils.RichTextsToMarkdown(fileBlock.Caption);
         }
         return execute;
     }
@@ -282,13 +281,13 @@ public static class Transformer
             var block = context.CurrentBlock.GetOriginalBlock<Block>();
             var (text, level) = block switch
             {
-                HeadingOneBlock headingOneBlock => (RichTextsToMarkdown(headingOneBlock.Heading_1.RichText), 1),
-                HeadingTwoBlock headingTwoBlock => (RichTextsToMarkdown(headingTwoBlock.Heading_2.RichText), 2),
-                HeadingThreeBlock headingThreeBlock => (RichTextsToMarkdown(headingThreeBlock.Heading_3.RichText), 3),
+                HeadingOneBlock headingOneBlock => (MarkdownUtils.RichTextsToMarkdown(headingOneBlock.Heading_1.RichText), 1),
+                HeadingTwoBlock headingTwoBlock => (MarkdownUtils.RichTextsToMarkdown(headingTwoBlock.Heading_2.RichText), 2),
+                HeadingThreeBlock headingThreeBlock => (MarkdownUtils.RichTextsToMarkdown(headingThreeBlock.Heading_3.RichText), 3),
                 _ => (string.Empty, 1),
             };
 
-            return Heading(text, level);
+            return MarkdownUtils.Heading(text, level);
         }
         return execute;
     }
@@ -344,12 +343,12 @@ public static class Transformer
                 .Count() + 1;
 
             var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
-            var text = RichTextsToMarkdown(block.NumberedListItem.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(block.NumberedListItem.RichText);
 
             // テキストに改行が含まれている場合、2行目以降にインデントを適用
             var lines = text.Split('\n');
             var formattedText = lines.Length > 1
-                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => Indent(line, 3)))}"
+                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => MarkdownUtils.Indent(line, 3)))}"
                 : text;
 
             var children = context.CurrentBlock.HasChildren
@@ -357,8 +356,8 @@ public static class Transformer
                 : string.Empty;
 
             return string.IsNullOrEmpty(children)
-                ? NumberedList(formattedText, listCount)
-                : $"{NumberedList(formattedText, listCount)}\n{Indent(children, 3)}";
+                ? MarkdownUtils.NumberedList(formattedText, listCount)
+                : $"{MarkdownUtils.NumberedList(formattedText, listCount)}\n{MarkdownUtils.Indent(children, 3)}";
         }
         return execute;
 
@@ -415,7 +414,7 @@ public static class Transformer
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
                 : string.Empty;
 
-            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText);
             var convertedMarkdown = string.IsNullOrEmpty(children)
                 ? text
                 : $"{text}{Environment.NewLine}{children}";
@@ -455,9 +454,9 @@ public static class Transformer
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
                 : string.Empty;
-            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText);
+            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText);
 
-            return Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
+            return MarkdownUtils.Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
         }
         return execute;
     }
@@ -512,8 +511,8 @@ public static class Transformer
         static string execute(Context context)
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
-            var title = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
-            return Details(title, children);
+            var title = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
+            return MarkdownUtils.Details(title, children);
         }
         return execute;
     }
@@ -534,8 +533,8 @@ public static class Transformer
                 UploadedFile uploadedFile => uploadedFile.File.Url,
                 _ => string.Empty
             };
-            var title = RichTextsToMarkdown(block.Image.Caption);
-            return Image(title, url);
+            var title = MarkdownUtils.RichTextsToMarkdown(block.Image.Caption);
+            return MarkdownUtils.Image(title, url);
         }
         return execute;
     }

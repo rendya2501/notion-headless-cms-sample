@@ -7,7 +7,7 @@ namespace hoge.Services;
 /// <summary>
 /// Notionのクライアントラッパー
 /// </summary>
-public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
+public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
 {
     private const string TitlePropertyName = "Title";
     private const string TypePropertyName = "Type";
@@ -31,7 +31,7 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
 
         do
         {
-            var pagination = await client.Databases.QueryAsync(databaseId, new DatabasesQueryParameters
+            var pagination = await _client.Databases.QueryAsync(databaseId, new DatabasesQueryParameters
             {
                 Filter = filter,
                 StartCursor = nextCursor
@@ -125,7 +125,7 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
     /// <returns></returns>
     public async Task UpdatePagePropertiesAsync(string pageId, DateTime now)
     {
-        await client.Pages.UpdateAsync(pageId, new PagesUpdateParameters
+        await _client.Pages.UpdateAsync(pageId, new PagesUpdateParameters
         {
             Properties = new Dictionary<string, PropertyValue>
             {
@@ -167,7 +167,7 @@ public class NotionClientWrapper(INotionClient client) : INotionClientWrapper
         do
         {
             // ページの親要素を取得
-            var pagination = await client.Blocks.RetrieveChildrenAsync(
+            var pagination = await _client.Blocks.RetrieveChildrenAsync(
                 blockId,
                 new BlocksRetrieveChildrenParameters
                 {
