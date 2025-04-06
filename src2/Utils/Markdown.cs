@@ -4,57 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace hoge.Utils;
 
-///// <summary>
-///// Notion APIの色タイプ
-///// </summary>
-//public enum ApiColor
-//{
-//    Default,
-//    DefaultBackground,
-//    Red,
-//    RedBackground,
-//    Orange,
-//    OrangeBackground,
-//    Yellow,
-//    YellowBackground,
-//    Brown,
-//    BrownBackground,
-//    Green,
-//    GreenBackground,
-//    Blue,
-//    BlueBackground,
-//    Purple,
-//    PurpleBackground,
-//    Pink,
-//    PinkBackground,
-//    Gray,
-//    GrayBackground
-//}
-
-///// <summary>
-///// リッチテキスト構造体
-///// </summary>
-//public class RichText
-//{
-//    public string PlainText { get; set; }
-//    public string Href { get; set; }
-//    public string Type { get; set; }
-//    public TextAnnotations Annotations { get; set; }
-//}
-
-///// <summary>
-///// テキストアノテーション構造体
-///// </summary>
-//public class TextAnnotations
-//{
-//    public bool Bold { get; set; }
-//    public bool Italic { get; set; }
-//    public bool Strikethrough { get; set; }
-//    public bool Underline { get; set; }
-//    public bool Code { get; set; }
-//    public ApiColor Color { get; set; }
-//}
-
 /// <summary>
 /// 箇条書きスタイル
 /// </summary>
@@ -466,7 +415,10 @@ public static class MarkdownUtils
     public static string Indent(string text, int spaces = 2)
     {
         var lines = text.Split('\n');
-        return string.Join("\n", lines.Select(line => string.IsNullOrEmpty(line) ? line : $"{new string(' ', spaces)}{line}"));
+        var indentedLines = lines.Select(line => string.IsNullOrEmpty(line)
+            ? line
+            : $"{new string(' ', spaces)}{line}");
+        return string.Join("\n", indentedLines);
     }
 
     /// <summary>
@@ -519,60 +471,65 @@ public static class MarkdownUtils
         public object Color { get; set; } = false; // bool または ColorMap
     }
 
+
     /// <summary>
     /// リッチテキストをMarkdownに変換
     /// </summary>
-    public static string RichTextsToMarkdown(IEnumerable<RichTextBase> richTexts, EnableAnnotations? enableAnnotations = null, ColorMap? colorMap = null)
+    public static string RichTextsToMarkdown(
+        IEnumerable<RichTextBase> richTexts,
+        EnableAnnotations? enableAnnotations = null,
+        ColorMap? colorMap = null)
     {
         enableAnnotations ??= new EnableAnnotations();
+        var result = new StringBuilder();
 
-        string ToMarkdown(RichTextBase text, EnableAnnotations options)
+        foreach (var text in richTexts)
         {
             var markdown = text.PlainText;
 
-            if (text.Annotations.IsCode && options.Code)
+            if (text.Annotations.IsCode && enableAnnotations.Code)
             {
                 markdown = InlineCode(markdown);
             }
-            if (text.Type == RichTextType.Equation && options.Equation)
+            if (text.Type == RichTextType.Equation && enableAnnotations.Equation)
             {
                 markdown = InlineEquation(markdown);
             }
-            if (text.Annotations.IsBold && options.Bold)
+            if (text.Annotations.IsBold && enableAnnotations.Bold)
             {
                 markdown = Bold(markdown);
             }
-            if (text.Annotations.IsItalic && options.Italic)
+            if (text.Annotations.IsItalic && enableAnnotations.Italic)
             {
                 markdown = Italic(markdown);
             }
-            if (text.Annotations.IsStrikeThrough && options.Strikethrough)
+            if (text.Annotations.IsStrikeThrough && enableAnnotations.Strikethrough)
             {
                 markdown = Strikethrough(markdown);
             }
-            if (text.Annotations.IsUnderline && options.Underline)
+            if (text.Annotations.IsUnderline && enableAnnotations.Underline)
             {
                 markdown = Underline(markdown);
             }
-            if (options.Color is not null && text.Annotations.Color is not Notion.Client.Color.Default)
+            if (enableAnnotations.Color is not null && text.Annotations.Color is not Notion.Client.Color.Default)
             {
-                if (options.Color is bool boolValue && boolValue)
+                if (enableAnnotations.Color is bool boolValue && boolValue)
                 {
                     markdown = Color(markdown, text.Annotations.Color, colorMap);
                 }
-                else if (options.Color is ColorMap customColorMap)
+                else if (enableAnnotations.Color is ColorMap customColorMap)
                 {
                     markdown = Color(markdown, text.Annotations.Color, customColorMap);
                 }
             }
-            if (!string.IsNullOrEmpty(text.Href) && Utils.IsURL(text.Href) && options.Link)
+            if (!string.IsNullOrEmpty(text.Href) && Utils.IsURL(text.Href) && enableAnnotations.Link)
             {
                 markdown = Link(markdown, text.Href);
             }
 
-            return markdown;
+            result.Append(markdown);
         }
 
-        return string.Join(string.Empty, richTexts.Select(text => ToMarkdown(text, enableAnnotations)));
+        return result.ToString();
     }
 }

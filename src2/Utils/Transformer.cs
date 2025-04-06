@@ -78,22 +78,47 @@ public static class Transformer
     /// <returns></returns>
     public static Func<Context, string> CreateMarkdownBulletedListItemTransformer()
     {
+        //static string execute(Context context)
+        //{
+        //    var children = context.CurrentBlock.HasChildren
+        //        ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+        //        : string.Empty;
+
+        //    var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>().BulletedListItem.RichText);
+        //    var formattedChildren = Indent(children);
+        //    var bulletText = BulletList(text);
+
+        //    if (string.IsNullOrEmpty(children))
+        //    {
+        //        return bulletText;
+        //    }
+
+        //    return $"{bulletText}\n{formattedChildren}";
+        //}
+        //return execute2;
+
         static string execute(Context context)
         {
-            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
+            var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
+            var text = RichTextsToMarkdown(block.BulletedListItem.RichText);
 
-            var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>().BulletedListItem.RichText);
-            var formattedChildren = Indent(children);
-            var bulletText = BulletList(text);
+            // テキストに改行が含まれている場合、2行目以降にインデントを適用
+            var lines = text.Split('\n');
+            var formattedText = lines.Length > 1
+                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => Indent(line)))}"
+                : text;
 
-            if (string.IsNullOrEmpty(children))
-            {
-                return bulletText;
-            }
+            var children = context.CurrentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+                : string.Empty;
 
-            return $"{bulletText}{Environment.NewLine}{formattedChildren}";
+            return string.IsNullOrEmpty(children)
+                ? BulletList(formattedText)
+                : $"{BulletList(formattedText)}\n{Indent(children)}";
         }
         return execute;
+
+
     }
 
 
@@ -157,8 +182,8 @@ public static class Transformer
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
             var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
-
-            return Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
+            var result = string.IsNullOrEmpty(children) ? text : $"{text}\n{children}";
+            return Blockquote(result);
         }
         return execute;
     }
@@ -214,10 +239,12 @@ public static class Transformer
     {
         static string execute(Context context)
         {
-            var text = context.CurrentBlock.GetOriginalBlock<EquationBlock>().Equation.Expression;
-            return context.CurrentBlock.GetOriginalBlock<EquationBlock>().Type == BlockType.Code
-                    ? CodeBlock(text, "txt")
-                    : BlockEquation(text);
+            var block = context.CurrentBlock.GetOriginalBlock<EquationBlock>();
+            var text = block.Equation.Expression;
+            var result = block.Type == BlockType.Code
+                ? CodeBlock(text, "txt")
+                : BlockEquation(text);
+            return result;
         }
         return execute;
     }
@@ -284,37 +311,57 @@ public static class Transformer
     /// <returns></returns>
     public static Func<Context, string> CreateMarkdownNumberedListItemTransformer()
     {
+        //static string execute(Context context)
+        //{
+        //    // 現在のブロックの前にあるブロックを取得
+        //    var listCount = context.Blocks
+        //        .Take(context.CurrentBlockIndex)
+        //        .Reverse()
+        //        .TakeWhile(b => b.OriginalBlock is NumberedListItemBlock)
+        //        .Count() + 1;
+
+        //    // 現在のブロックを取得
+        //    var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
+        //    // 現在のブロックのテキストを取得
+        //    var text = RichTextsToMarkdown(block.NumberedListItem.RichText);
+        //    // 現在のブロックの子ブロックを取得
+        //    var children = context.CurrentBlock.HasChildren
+        //        ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+        //        : string.Empty;
+        //    // 現在のブロックの子ブロックが空の場合は番号付きリストを返す
+        //    return string.IsNullOrEmpty(children)
+        //        ? NumberedList(text, listCount)
+        //        : $"{NumberedList(text, listCount)}\n{Indent(children, 3)}";
+        //}
+        //return execute;
+
         static string execute(Context context)
         {
-            // 現在のブロックの前にあるブロックを取得
-            var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
-            // NumberedListItemBlockではないブロックが出てくるまでカウント
-            // そのカウント数がリストのインデックスとなる
-            var listCount = 1;
-            for (var index = beforeBlocks.Count - 1; index >= 0; index--)
-            {
-                if (beforeBlocks[index].OriginalBlock is not NumberedListItemBlock)
-                {
-                    break;
-                }
-                listCount++;
-            }
+            var listCount = context.Blocks
+                .Take(context.CurrentBlockIndex)
+                .Reverse()
+                .TakeWhile(b => b.OriginalBlock is NumberedListItemBlock)
+                .Count() + 1;
 
             var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
-            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
+            var text = RichTextsToMarkdown(block.NumberedListItem.RichText);
 
-            string text = RichTextsToMarkdown(block.NumberedListItem.RichText);
-            string formattedChildren = Indent(children, 3);
-            string bulletText = NumberedList(text, listCount);
+            // テキストに改行が含まれている場合、2行目以降にインデントを適用
+            var lines = text.Split('\n');
+            var formattedText = lines.Length > 1
+                ? $"{lines[0]}\n{string.Join("\n", lines.Skip(1).Select(line => Indent(line, 3)))}"
+                : text;
 
-            if (string.IsNullOrEmpty(children))
-            {
-                return bulletText;
-            }
+            var children = context.CurrentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+                : string.Empty;
 
-            return $"{bulletText}\n{formattedChildren}";
+            return string.IsNullOrEmpty(children)
+                ? NumberedList(formattedText, listCount)
+                : $"{NumberedList(formattedText, listCount)}\n{Indent(children, 3)}";
         }
         return execute;
+
 
         // string execute((NumberedListItemBlock Block, string Children, int Index) args)
         // {
@@ -353,27 +400,6 @@ public static class Transformer
         // }
 
         // return createTransfomer;
-
-
-
-        //return TransformerFactory.CreateNumberedListItemTransformerFactory(args =>
-        //{
-        //    string text = RichTextsToMarkdown(
-        //        args.Block.NumberedListItem.RichText,
-        //        options.EnableAnnotations,
-        //        options.ColorMap
-        //    );
-
-        //    string formattedChildren = Indent(args.Children, 3);
-        //    string bulletText = NumberedList(text, args.Index);
-
-        //    if (string.IsNullOrEmpty(args.Children))
-        //    {
-        //        return bulletText;
-        //    }
-
-        //    return $"{bulletText}\n{formattedChildren}";
-        //});
     }
 
 

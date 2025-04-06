@@ -2,6 +2,7 @@ using hoge.Configuration;
 using hoge.Models;
 using Notion.Client;
 using System.Text;
+using hoge.Utils;
 
 namespace hoge.Services;
 
@@ -72,6 +73,9 @@ public class NotionExporter(
 
             // ページの Markdown を生成
             var markdown = await markdownGenerator.GenerateMarkdownAsync(pageData);
+            
+            // 画像をダウンロードし、マークダウンのパスを更新
+            markdown = await ImageDownloader.ProcessMarkdownImagesAsync(markdown, outputDirectory);
 
             // Markdown を出力
             await File.WriteAllTextAsync(
