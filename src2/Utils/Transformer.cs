@@ -11,7 +11,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownBookmarkTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             // 現在のブロックをブックマークブロックに変換
             var originalBlock = context.CurrentBlock.GetOriginalBlock<Block>();
@@ -29,35 +29,7 @@ public static class Transformer
                 : bookmarkBlock.Bookmark.Url;
             // ブックマークのキャプションが空の場合はURLを表示する
             return MarkdownUtils.Link(text, bookmarkBlock.Bookmark.Url);
-        }
-        return execute;
-
-        //string execute(BookmarkBlock block)
-        //{
-        //    // ブックマークのキャプションをMarkdown形式に変換
-        //    string caption = RichTextsToMarkdown(
-        //        block.Bookmark.Caption,
-        //        options.EnableAnnotations,
-        //        options.ColorMap
-        //    );
-        //    // ブックマークのキャプションが空の場合はURLを表示する
-        //    string text = !string.IsNullOrEmpty(caption)
-        //        ? caption
-        //        : block.Bookmark.Url;
-        //    return Link(text, block.Bookmark.Url);
-        //}
-
-        //string createTransformer(Context context)
-        //{
-        //    var originalBlock = context.CurrentBlock.GetOriginalBlock<Block>();
-        //    if (originalBlock is not BookmarkBlock bookmarkBlock || string.IsNullOrEmpty(bookmarkBlock.Bookmark.Url))
-        //    {
-        //        return string.Empty;
-        //    }
-        //    return execute(bookmarkBlock);
-        //}
-
-        //return createTransformer;
+        };
     }
 
 
@@ -77,26 +49,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownBulletedListItemTransformer()
     {
-        //static string execute(Context context)
-        //{
-        //    var children = context.CurrentBlock.HasChildren
-        //        ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
-        //        : string.Empty;
-
-        //    var text = RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>().BulletedListItem.RichText);
-        //    var formattedChildren = Indent(children);
-        //    var bulletText = BulletList(text);
-
-        //    if (string.IsNullOrEmpty(children))
-        //    {
-        //        return bulletText;
-        //    }
-
-        //    return $"{bulletText}\n{formattedChildren}";
-        //}
-        //return execute2;
-
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
             var text = MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText);
@@ -114,10 +67,7 @@ public static class Transformer
             return string.IsNullOrEmpty(children)
                 ? MarkdownUtils.BulletList(formattedText)
                 : $"{MarkdownUtils.BulletList(formattedText)}\n{MarkdownUtils.Indent(children)}";
-        }
-        return execute;
-
-
+        };
     }
 
 
@@ -127,13 +77,12 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownCodeTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
             var lang = context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.Language;
             return MarkdownUtils.CodeBlock(text, lang);
-        }
-        return execute;
+        };
     }
 
 
@@ -143,14 +92,13 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownColumnListTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var columns = context.CurrentBlock.Children;
             var columnsText = columns.Select(column => context.ExecuteTransformBlocks(column.Children));
 
             return string.Join("\n", columnsText);
-        }
-        return execute;
+        };
     }
 
 
@@ -177,14 +125,13 @@ public static class Transformer
         //            sb.AppendLine();
         //        }
         //    }
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
             var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
             var result = string.IsNullOrEmpty(children) ? text : $"{text}\n{children}";
             return MarkdownUtils.Blockquote(result);
-        }
-        return execute;
+        };
     }
 
 
@@ -194,10 +141,6 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownDividerTransformer()
     {
-        // static string execute(NotionBlockTransformContext context)
-        // {
-        //     return WrapWithNewLines(HorizontalRule());
-        // }
         return context => MarkdownUtils.HorizontalRule();
     }
 
@@ -208,7 +151,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownEmbedTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             // var captionMetadata = FromRichText(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
             // if (enableEmbed && supportedEmbedProviders)
@@ -225,8 +168,7 @@ public static class Transformer
             var caption = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
             var url = context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Url;
             return MarkdownUtils.Link(caption ?? url, url);
-        }
-        return execute;
+        };
     }
 
 
@@ -236,7 +178,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownEquationTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<EquationBlock>();
             var text = block.Equation.Expression;
@@ -244,8 +186,7 @@ public static class Transformer
                 ? MarkdownUtils.CodeBlock(text, "txt")
                 : MarkdownUtils.BlockEquation(text);
             return result;
-        }
-        return execute;
+        };
     }
 
 
@@ -255,7 +196,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownFileTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             // var captionMetadata = CaptionMetadata.fromRichText(context.CurrentBlock.GetOriginalBlock<FileBlock>().File.Caption);
             var fileBlock = context.CurrentBlock.GetOriginalBlock<FileBlock>().File;
@@ -265,8 +206,7 @@ public static class Transformer
             //     : fileBlock.Name;
             // return Link(caption, fileBlock.);
             return MarkdownUtils.RichTextsToMarkdown(fileBlock.Caption);
-        }
-        return execute;
+        };
     }
 
 
@@ -276,7 +216,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownHeadingTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<Block>();
             var (text, level) = block switch
@@ -288,8 +228,7 @@ public static class Transformer
             };
 
             return MarkdownUtils.Heading(text, level);
-        }
-        return execute;
+        };
     }
 
 
@@ -334,7 +273,7 @@ public static class Transformer
         //}
         //return execute;
 
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var listCount = context.Blocks
                 .Take(context.CurrentBlockIndex)
@@ -358,48 +297,47 @@ public static class Transformer
             return string.IsNullOrEmpty(children)
                 ? MarkdownUtils.NumberedList(formattedText, listCount)
                 : $"{MarkdownUtils.NumberedList(formattedText, listCount)}\n{MarkdownUtils.Indent(children, 3)}";
-        }
-        return execute;
-
-
-        // string execute((NumberedListItemBlock Block, string Children, int Index) args)
-        // {
-        //     string text = RichTextsToMarkdown(args.Block.NumberedListItem.RichText);
-        //     string formattedChildren = Indent(args.Children, 3);
-        //     string bulletText = NumberedList(text, args.Index);
-
-        //     if (string.IsNullOrEmpty(args.Children))
-        //     {
-        //         return bulletText;
-        //     }
-
-        //     return $"{bulletText}\n{formattedChildren}";
-        // }
-
-        // string createTransfomer(NotionBlockTransformContext context)
-        // {
-        //     // 現在のブロックの前にあるブロックを取得
-        //     var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
-        //     // NumberedListItemBlockではないブロックが出てくるまでカウント
-        //     // そのカウント数がリストのインデックスとなる
-        //     var listCount = 1;
-        //     for (var index = beforeBlocks.Count - 1; index >= 0; index--)
-        //     {
-        //         if (beforeBlocks[index].OriginalBlock is not NumberedListItemBlock)
-        //         {
-        //             break;
-        //         }
-        //         listCount++;
-        //     }
-
-        //     return execute((
-        //         Block: context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>(),
-        //         Children: context.ExecuteTransformBlocks(context.CurrentBlock.Children),
-        //         Index: listCount));
-        // }
-
-        // return createTransfomer;
+        };
     }
+
+
+    // string execute((NumberedListItemBlock Block, string Children, int Index) args)
+    // {
+    //     string text = RichTextsToMarkdown(args.Block.NumberedListItem.RichText);
+    //     string formattedChildren = Indent(args.Children, 3);
+    //     string bulletText = NumberedList(text, args.Index);
+
+    //     if (string.IsNullOrEmpty(args.Children))
+    //     {
+    //         return bulletText;
+    //     }
+
+    //     return $"{bulletText}\n{formattedChildren}";
+    // }
+
+    // string createTransfomer(NotionBlockTransformContext context)
+    // {
+    //     // 現在のブロックの前にあるブロックを取得
+    //     var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
+    //     // NumberedListItemBlockではないブロックが出てくるまでカウント
+    //     // そのカウント数がリストのインデックスとなる
+    //     var listCount = 1;
+    //     for (var index = beforeBlocks.Count - 1; index >= 0; index--)
+    //     {
+    //         if (beforeBlocks[index].OriginalBlock is not NumberedListItemBlock)
+    //         {
+    //             break;
+    //         }
+    //         listCount++;
+    //     }
+
+    //     return execute((
+    //         Block: context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>(),
+    //         Children: context.ExecuteTransformBlocks(context.CurrentBlock.Children),
+    //         Index: listCount));
+    // }
+
+    // return createTransfomer;
 
 
     /// <summary>
@@ -408,7 +346,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownParagraphTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
@@ -419,9 +357,7 @@ public static class Transformer
                 ? text
                 : $"{text}{Environment.NewLine}{children}";
             return convertedMarkdown;
-        }
-
-        return execute;
+        };
     }
 
 
@@ -449,7 +385,7 @@ public static class Transformer
         //        }
         //    }
 
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
@@ -457,8 +393,7 @@ public static class Transformer
             var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText);
 
             return MarkdownUtils.Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
-        }
-        return execute;
+        };
     }
 
 
@@ -508,13 +443,12 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownToggleTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
             var title = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
             return MarkdownUtils.Details(title, children);
-        }
-        return execute;
+        };
     }
 
 
@@ -524,7 +458,7 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownImageTransformer()
     {
-        static string execute(NotionBlockTransformContext context)
+        return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<ImageBlock>();
             var url = block.Image switch
@@ -535,8 +469,7 @@ public static class Transformer
             };
             var title = MarkdownUtils.RichTextsToMarkdown(block.Image.Caption);
             return MarkdownUtils.Image(title, url);
-        }
-        return execute;
+        };
     }
 
 
