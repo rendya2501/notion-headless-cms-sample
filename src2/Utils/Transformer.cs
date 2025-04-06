@@ -9,9 +9,9 @@ public static class Transformer
     /// ブックマークブロックをMarkdown形式に変換する
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownBookmarkTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownBookmarkTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             // 現在のブロックをブックマークブロックに変換
             var originalBlock = context.CurrentBlock.GetOriginalBlock<Block>();
@@ -65,7 +65,7 @@ public static class Transformer
     /// ブラウザブロックをMarkdown形式に変換する
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownBreadcrumbTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownBreadcrumbTransformer()
     {
         return Context => "";
     }
@@ -75,7 +75,7 @@ public static class Transformer
     /// バレットリスト変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownBulletedListItemTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownBulletedListItemTransformer()
     {
         //static string execute(Context context)
         //{
@@ -96,7 +96,7 @@ public static class Transformer
         //}
         //return execute2;
 
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
             var text = MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText);
@@ -125,9 +125,9 @@ public static class Transformer
     /// コードブロック変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownCodeTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownCodeTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
             var lang = context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.Language;
@@ -141,9 +141,9 @@ public static class Transformer
     /// カラムリスト変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownColumnListTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownColumnListTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var columns = context.CurrentBlock.Children;
             var columnsText = columns.Select(column => context.ExecuteTransformBlocks(column.Children));
@@ -158,7 +158,7 @@ public static class Transformer
     /// コールアウトブロックをMarkdown形式に変換する
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownCalloutTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownCalloutTransformer()
     {
         //    foreach (var richText in calloutBlock.Callout.RichText)
         //    {
@@ -177,7 +177,7 @@ public static class Transformer
         //            sb.AppendLine();
         //        }
         //    }
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
             var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
@@ -192,9 +192,9 @@ public static class Transformer
     /// 水平線変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownDividerTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownDividerTransformer()
     {
-        // static string execute(Context context)
+        // static string execute(NotionBlockTransformContext context)
         // {
         //     return WrapWithNewLines(HorizontalRule());
         // }
@@ -206,9 +206,9 @@ public static class Transformer
     /// 埋め込み変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownEmbedTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownEmbedTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             // var captionMetadata = FromRichText(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
             // if (enableEmbed && supportedEmbedProviders)
@@ -234,9 +234,9 @@ public static class Transformer
     /// 数式変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownEquationTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownEquationTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var block = context.CurrentBlock.GetOriginalBlock<EquationBlock>();
             var text = block.Equation.Expression;
@@ -253,9 +253,9 @@ public static class Transformer
     /// ファイル変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownFileTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownFileTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             // var captionMetadata = CaptionMetadata.fromRichText(context.CurrentBlock.GetOriginalBlock<FileBlock>().File.Caption);
             var fileBlock = context.CurrentBlock.GetOriginalBlock<FileBlock>().File;
@@ -274,9 +274,9 @@ public static class Transformer
     /// 見出し変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownHeadingTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownHeadingTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var block = context.CurrentBlock.GetOriginalBlock<Block>();
             var (text, level) = block switch
@@ -297,7 +297,7 @@ public static class Transformer
     /// リンクプレビュー変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownLinkPreviewTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownLinkPreviewTransformer()
     {
 
         return context => "";
@@ -308,9 +308,9 @@ public static class Transformer
     /// 番号付きリスト変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownNumberedListItemTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownNumberedListItemTransformer()
     {
-        //static string execute(Context context)
+        //static string execute(NotionBlockTransformContext context)
         //{
         //    // 現在のブロックの前にあるブロックを取得
         //    var listCount = context.Blocks
@@ -334,7 +334,7 @@ public static class Transformer
         //}
         //return execute;
 
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var listCount = context.Blocks
                 .Take(context.CurrentBlockIndex)
@@ -376,7 +376,7 @@ public static class Transformer
         //     return $"{bulletText}\n{formattedChildren}";
         // }
 
-        // string createTransfomer(Context context)
+        // string createTransfomer(NotionBlockTransformContext context)
         // {
         //     // 現在のブロックの前にあるブロックを取得
         //     var beforeBlocks = context.Blocks.Take(context.CurrentBlockIndex).ToList();
@@ -406,9 +406,9 @@ public static class Transformer
     /// 段落変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownParagraphTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownParagraphTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
@@ -429,7 +429,7 @@ public static class Transformer
     /// 引用変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownQuoteTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownQuoteTransformer()
     {
         //    foreach (var richText in quoteBlock.Quote.RichText)
         //    {
@@ -449,7 +449,7 @@ public static class Transformer
         //        }
         //    }
 
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
@@ -466,7 +466,7 @@ public static class Transformer
     /// 同期ブロック変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownSyncedBlockTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownSyncedBlockTransformer()
     {
         return context => "";
     }
@@ -476,7 +476,7 @@ public static class Transformer
     /// 目次変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownTableOfContentsTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownTableOfContentsTransformer()
     {
         return context => "";
     }
@@ -486,7 +486,7 @@ public static class Transformer
     /// テーブル変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownTableTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownTableTransformer()
     {
         return context => "";
     }
@@ -496,7 +496,7 @@ public static class Transformer
     /// タスクリスト変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownTodoListItemTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownTodoListItemTransformer()
     {
         return context => "";
     }
@@ -506,9 +506,9 @@ public static class Transformer
     /// トグル変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownToggleTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownToggleTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
             var title = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
@@ -522,9 +522,9 @@ public static class Transformer
     /// 画像変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownImageTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownImageTransformer()
     {
-        static string execute(Context context)
+        static string execute(NotionBlockTransformContext context)
         {
             var block = context.CurrentBlock.GetOriginalBlock<ImageBlock>();
             var url = block.Image switch
@@ -544,7 +544,7 @@ public static class Transformer
     /// PDF変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownPDFTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownPDFTransformer()
     {
         return context => "";
     }
@@ -554,7 +554,7 @@ public static class Transformer
     /// ビデオ変換
     /// </summary>
     /// <returns></returns>
-    public static Func<Context, string> CreateMarkdownVideoTransformer()
+    public static Func<NotionBlockTransformContext, string> CreateMarkdownVideoTransformer()
     {
         return context => "";
     }

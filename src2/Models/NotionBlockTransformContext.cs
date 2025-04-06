@@ -1,9 +1,9 @@
 namespace hoge.Models;
 
 /// <summary>
-/// コンテキスト
+/// Notionブロックの変換コンテキスト
 /// </summary>
-public class Context
+public class NotionBlockTransformContext
 {
     /// <summary>
     /// ブロックを変換する

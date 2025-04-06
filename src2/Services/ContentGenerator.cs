@@ -7,12 +7,12 @@ namespace hoge.Services;
 /// <summary>
 /// コンテンツを生成するクラス
 /// </summary>
-public class ContentGenerator() : IContentGenerator
+public class ContentGenerator : IContentGenerator
 {
     /// <summary>
     /// ブロックに対応した処理を格納したディクショナリ
     /// </summary>
-    private readonly Dictionary<Type, Func<Context, string>> transformers = new()
+    private readonly Dictionary<Type, Func<NotionBlockTransformContext, string>> transformers = new()
     {
         { typeof(BookmarkBlock), Transformer.CreateMarkdownBookmarkTransformer() },
         { typeof(BreadcrumbBlock), Transformer.CreateMarkdownBreadcrumbTransformer() },
@@ -47,7 +47,7 @@ public class ContentGenerator() : IContentGenerator
     public string GenerateContentAsync(List<NotionBlock> blocks)
     {
         // コンテキストを作成
-        var context = new Context
+        var context = new NotionBlockTransformContext
         {
             // ブロックを変換する処理
             ExecuteTransformBlocks = GenerateContentAsync,
@@ -62,19 +62,17 @@ public class ContentGenerator() : IContentGenerator
         // 変換されたブロックを格納するリスト
         var transformedBlocks = new List<string>();
 
-        // ブロックを変換   
+        // ブロックを変換
         foreach (var (block, index) in blocks.Select((block, index) => (block, index)))
         {
             // コンテキストを更新
             context.CurrentBlock = block;
             context.CurrentBlockIndex = index;
 
-            // ブロックを変換
-            var originalBlock = block.GetOriginalBlock<Block>();
-            if (transformers.TryGetValue(originalBlock.GetType(), out var transformer))
+            // ブロックの型に応じた変換処理を実行
+            if (transformers.TryGetValue(block.GetOriginalBlock<Block>().GetType(), out var transformer))
             {
-                var transformed = transformer(context);
-                transformedBlocks.Add(transformed);
+                transformedBlocks.Add(transformer(context));
             }
         }
 
