@@ -27,8 +27,9 @@ public static class Transformer
             string text = !string.IsNullOrEmpty(caption)
                 ? caption
                 : bookmarkBlock.Bookmark.Url;
-            // ブックマークのキャプションが空の場合はURLを表示する
-            return MarkdownUtils.Link(text, bookmarkBlock.Bookmark.Url);
+            // リンクを生成し、最後に改行用スペースを追加
+            return MarkdownUtils.WithLineBreak(
+                MarkdownUtils.Link(text, bookmarkBlock.Bookmark.Url));
         };
     }
 
@@ -52,7 +53,8 @@ public static class Transformer
         return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
-            var text = MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText);
+            var text = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText));
 
             // テキストに改行が含まれている場合、2行目以降にインデントを適用
             var lines = text.Split('\n');
@@ -79,7 +81,8 @@ public static class Transformer
     {
         return context =>
         {
-            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.RichText);
+            var block = context.CurrentBlock.GetOriginalBlock<CodeBlock>();
+            var text = MarkdownUtils.RichTextsToMarkdown(block.Code.RichText);
             var lang = context.CurrentBlock.GetOriginalBlock<CodeBlock>().Code.Language;
             return MarkdownUtils.CodeBlock(text, lang);
         };
@@ -127,9 +130,16 @@ public static class Transformer
         //    }
         return context =>
         {
-            var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
-            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText);
+            var children = context.CurrentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+                : string.Empty;
+
+            var text = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(
+                    context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText));
+            
             var result = string.IsNullOrEmpty(children) ? text : $"{text}\n{children}";
+
             return MarkdownUtils.Blockquote(result);
         };
     }
@@ -165,9 +175,11 @@ public static class Transformer
             //     }
             // }
 
-            var caption = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Caption);
-            var url = context.CurrentBlock.GetOriginalBlock<EmbedBlock>().Embed.Url;
-            return MarkdownUtils.Link(caption ?? url, url);
+            var embedBlock = context.CurrentBlock.GetOriginalBlock<EmbedBlock>();
+            var caption = MarkdownUtils.RichTextsToMarkdown(embedBlock.Embed.Caption);
+            var url = embedBlock.Embed.Url;
+            return MarkdownUtils.WithLineBreak(
+                MarkdownUtils.Link(caption ?? url, url));
         };
     }
 
@@ -282,7 +294,9 @@ public static class Transformer
                 .Count() + 1;
 
             var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
-            var text = MarkdownUtils.RichTextsToMarkdown(block.NumberedListItem.RichText);
+            var text = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(
+                    block.NumberedListItem.RichText));
 
             // テキストに改行が含まれている場合、2行目以降にインデントを適用
             var lines = text.Split('\n');
@@ -348,11 +362,16 @@ public static class Transformer
     {
         return context =>
         {
-            var children = context.CurrentBlock.HasChildren
-                ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
+            var currentBlock = context.CurrentBlock;
+
+            var children = currentBlock.HasChildren
+                ? context.ExecuteTransformBlocks(currentBlock.Children)
                 : string.Empty;
 
-            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText);
+            var text = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(
+                    currentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText));
+
             var convertedMarkdown = string.IsNullOrEmpty(children)
                 ? text
                 : $"{text}{Environment.NewLine}{children}";
@@ -390,7 +409,10 @@ public static class Transformer
             var children = context.CurrentBlock.HasChildren
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
                 : string.Empty;
-            var text = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText);
+
+            var text = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(
+                    context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText));
 
             return MarkdownUtils.Blockquote(string.IsNullOrEmpty(children) ? text : $"{text}\n{children}");
         };
@@ -446,7 +468,10 @@ public static class Transformer
         return context =>
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
-            var title = MarkdownUtils.RichTextsToMarkdown(context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText);
+            var title = MarkdownUtils.AppendNewLine(
+                MarkdownUtils.RichTextsToMarkdown(
+                    context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText));
+            
             return MarkdownUtils.Details(title, children);
         };
     }
@@ -468,7 +493,9 @@ public static class Transformer
                 _ => string.Empty
             };
             var title = MarkdownUtils.RichTextsToMarkdown(block.Image.Caption);
-            return MarkdownUtils.Image(title, url);
+            
+            return MarkdownUtils.AppendNewLine(
+                MarkdownUtils.Image(title, url));
         };
     }
 
@@ -489,6 +516,11 @@ public static class Transformer
     /// <returns></returns>
     public static Func<NotionBlockTransformContext, string> CreateMarkdownVideoTransformer()
     {
-        return context => "";
+        return context =>
+        {
+            var aaa = context.CurrentBlock.GetOriginalBlock<VideoBlock>();
+
+            return "";
+        };
     }
 }
