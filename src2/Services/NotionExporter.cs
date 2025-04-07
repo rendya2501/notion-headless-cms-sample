@@ -113,10 +113,10 @@ public class NotionExporter(
     /// <returns></returns>
     private bool ShouldExportPage(PageProperty pageProperty, DateTime now)
     {
-        // リクエスト公開が無効な場合はスキップ
-        if (!pageProperty.RequestPublishing)
+        // 公開ステータスが公開待ちでない場合はスキップ
+        if (pageProperty.PublicStatus != PublicStatus.Queued)
         {
-            _logger.LogInformation("Skipping page {PageId} (title = {Title}): No request publishing.",
+            _logger.LogInformation("Skipping page {PageId} (title = {Title}): Not published.",
                 pageProperty.PageId, pageProperty.Title);
             return false;
         }

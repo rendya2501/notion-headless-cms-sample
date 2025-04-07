@@ -1,3 +1,5 @@
+using hoge.Services;
+
 namespace hoge.Models;
 
 /// <summary>
@@ -13,5 +15,5 @@ public class PageProperty
     public List<string> Tags { get; set; } = [];
     public DateTime? PublishedDateTime { get; set; }
     public DateTime? LastCrawledDateTime { get; set; }
-    public bool RequestPublishing { get; set; }
+    public PublicStatus PublicStatus { get; set; } = PublicStatus.Unpublished;
 }

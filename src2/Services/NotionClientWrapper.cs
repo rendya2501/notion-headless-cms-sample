@@ -12,11 +12,11 @@ public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
     private const string TitlePropertyName = "Title";
     private const string TypePropertyName = "Type";
     private const string PublishedAtPropertyName = "PublishedAt";
-    private const string RequestPublishingPropertyName = "RequestPublishing";
     private const string CrawledAtPropertyName = "_SystemCrawledAt";
     private const string TagsPropertyName = "Tags";
     private const string DescriptionPropertyName = "Description";
     private const string SlugPropertyName = "Slug";
+    private const string PublicStatusName = "PublicStatus";
 
     /// <summary>
     /// 公開用ページを取得します。
@@ -26,7 +26,7 @@ public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
     public async Task<List<Page>> GetPagesForPublishingAsync(string databaseId)
     {
         var allPages = new List<Page>();
-        var filter = new CheckboxFilter(RequestPublishingPropertyName, true);
+        var filter = new SelectFilter(PublicStatusName, PublicStatus.Queued.ToString());
         string? nextCursor = null;
 
         do
@@ -105,11 +105,11 @@ public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
                     pageProperty.Type = type;
                 }
             }
-            else if (property.Key == RequestPublishingPropertyName)
+            else if (property.Key == PublicStatusName)
             {
-                if (PropertyParser.TryParseAsBoolean(property.Value, out var requestPublishing))
+                if (PropertyParser.TryParseAsEnum<PublicStatus>(property.Value, out var publicStatus))
                 {
-                    pageProperty.RequestPublishing = requestPublishing;
+                    pageProperty.PublicStatus = publicStatus;
                 }
             }
         }
@@ -136,15 +136,11 @@ public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
                         Start = now
                     }
                 },
-                [RequestPublishingPropertyName] = new CheckboxPropertyValue
-                {
-                    Checkbox = false
-                },
-                ["セレクト"] = new SelectPropertyValue
+                [PublicStatusName] = new SelectPropertyValue
                 {
                     Select = new SelectOption
                     {
-                        Name = "公開済み"
+                        Name = PublicStatus.Published.ToString()
                     }
                 }
             }
@@ -189,4 +185,24 @@ public class NotionClientWrapper(INotionClient _client) : INotionClientWrapper
         await Task.WhenAll(tasks);
         return results;
     }
+}
+
+
+/// <summary>
+/// 公開ステータス
+/// </summary>
+public enum PublicStatus
+{
+    /// <summary>
+    /// 公開済み
+    /// </summary>
+    Published,
+    /// <summary>
+    /// 公開待ち
+    /// </summary>
+    Queued,
+    /// <summary>
+    /// 非公開
+    /// </summary>
+    Unpublished
 }
