@@ -1,6 +1,3 @@
-using Notion.Client;
-using System.Text;
-
 namespace hoge.Utils;
 
 /// <summary>
