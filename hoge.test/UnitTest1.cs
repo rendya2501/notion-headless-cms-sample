@@ -1,4 +1,7 @@
-﻿using hoge.Utils;
+﻿using hoge.Services;
+using hoge.Utils;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace hoge.test;
 
@@ -39,8 +42,44 @@ public class UnitTest1
             Assert.Equal("Processing A-specific logic", aa);
         }
     }
+
+    [Fact]
+    public void Test3()
+    {
+        // 使用例
+        string symbol = BulletStyle2.Hyphen.GetDescription();
+        Console.WriteLine(symbol); // 出力: "-"
+    }
+
+
+    public enum BulletStyle2
+    {
+        [Description("-")]
+        Hyphen,
+        [Description("*")]
+        Asterisk,
+        [Description("+")]
+        Plus
+    }
+
+    [Fact]
+    public void Test4()
+    {
+        // 使用例
+        string symbol = PublicStatus.Queued.ToString();
+        Console.WriteLine(symbol);
+    }
 }
 
+public static class EnumExtensions
+{
+    public static string GetDescription(this Enum value)
+    {
+        var field = value.GetType().GetField(value.ToString());
+        var attribute = field.GetCustomAttribute<DescriptionAttribute>();
+        return attribute?.Description ?? value.ToString();
+    }
+}
 // オリジナルな型を3つ定義
 public abstract class CustomType
 {
