@@ -53,7 +53,7 @@ public static class Transformer
         return context =>
         {
             var block = context.CurrentBlock.GetOriginalBlock<BulletedListItemBlock>();
-            var text = MarkdownUtils.AppendNewLine(
+            var text = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(block.BulletedListItem.RichText));
 
             // テキストに改行が含まれている場合、2行目以降にインデントを適用
@@ -134,7 +134,7 @@ public static class Transformer
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
                 : string.Empty;
 
-            var text = MarkdownUtils.AppendNewLine(
+            var text = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(
                     context.CurrentBlock.GetOriginalBlock<CalloutBlock>().Callout.RichText));
             
@@ -294,7 +294,7 @@ public static class Transformer
                 .Count() + 1;
 
             var block = context.CurrentBlock.GetOriginalBlock<NumberedListItemBlock>();
-            var text = MarkdownUtils.AppendNewLine(
+            var text = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(
                     block.NumberedListItem.RichText));
 
@@ -368,7 +368,7 @@ public static class Transformer
                 ? context.ExecuteTransformBlocks(currentBlock.Children)
                 : string.Empty;
 
-            var text = MarkdownUtils.AppendNewLine(
+            var text = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(
                     currentBlock.GetOriginalBlock<ParagraphBlock>().Paragraph.RichText));
 
@@ -410,7 +410,7 @@ public static class Transformer
                 ? context.ExecuteTransformBlocks(context.CurrentBlock.Children)
                 : string.Empty;
 
-            var text = MarkdownUtils.AppendNewLine(
+            var text = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(
                     context.CurrentBlock.GetOriginalBlock<QuoteBlock>().Quote.RichText));
 
@@ -468,7 +468,7 @@ public static class Transformer
         return context =>
         {
             var children = context.ExecuteTransformBlocks(context.CurrentBlock.Children);
-            var title = MarkdownUtils.AppendNewLine(
+            var title = MarkdownUtils.LineBreak(
                 MarkdownUtils.RichTextsToMarkdown(
                     context.CurrentBlock.GetOriginalBlock<ToggleBlock>().Toggle.RichText));
             
@@ -494,7 +494,7 @@ public static class Transformer
             };
             var title = MarkdownUtils.RichTextsToMarkdown(block.Image.Caption);
             
-            return MarkdownUtils.AppendNewLine(
+            return MarkdownUtils.LineBreak(
                 MarkdownUtils.Image(title, url));
         };
     }
