@@ -69,7 +69,7 @@ public class NotionExporter(
     private async Task<bool> ExportPageAsync(Page page, DateTime now)
     {
         try
-        {       
+        {
             // ページのプロパティをコピー
             var pageData = _notionClient.CopyPageProperties(page);
 
@@ -156,7 +156,7 @@ public class NotionExporter(
         // 出力ディレクトリパスをレンダリング
         return template.Render(new
         {
-            publish = pageProperty.PublishedDateTime.Value,
+            publish = pageProperty.PublishedDateTime!.Value,
             title = pageProperty.Title,
             slug = slug
         });
