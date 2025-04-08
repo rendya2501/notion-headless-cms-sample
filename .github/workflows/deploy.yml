@@ -1,4 +1,4 @@
-name: Notion to Markdown Workflow
+name: deploy
 
 on:
   workflow_dispatch:
